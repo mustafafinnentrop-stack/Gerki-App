@@ -225,7 +225,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('openclaw:action', async (_event, action: Record<string, unknown>) => {
     try {
       const url = getSettings().openclaw_url ?? 'http://localhost:8765'
-      const oc = getOpenclawClient(url)
       const res = await fetch(`${url}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

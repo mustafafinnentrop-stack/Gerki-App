@@ -13,7 +13,7 @@ const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.csv', '.json', '.xml', '.html'
 const DOC_EXTENSIONS = new Set(['.pdf', '.docx', '.doc'])
 const ALL_INDEXED = new Set([...TEXT_EXTENSIONS, ...DOC_EXTENSIONS, '.xlsx', '.jpg', '.png'])
 
-let watchers: Map<string, ReturnType<typeof watch>> = new Map()
+const watchers: Map<string, ReturnType<typeof watch>> = new Map()
 
 // Ordner zur Überwachung hinzufügen
 export function watchFolder(folderPath: string, folderName: string): void {

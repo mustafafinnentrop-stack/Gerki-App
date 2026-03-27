@@ -15,7 +15,7 @@ import OpenAI from 'openai'
 import { getDB } from '../db/database'
 import { buildMemoryContext, rememberFacts } from '../db/memory'
 import { detectSkill, getSkill } from './skills'
-import { searchFiles } from './fileIndexer'
+import { searchFiles, getIndexStats } from './fileIndexer'
 import { getOpenclawClient } from './openclawClient'
 import { runAgenticLoop } from './agenticLoop'
 import type { AgentStep } from './agenticLoop'
@@ -163,7 +163,6 @@ export async function processMessage(
   let fileContext = ''
   const filesUsed: string[] = []
   if (skill.tools.includes('file_search')) {
-    const { getIndexStats } = await import('./fileIndexer')
     const stats = getIndexStats()
 
     if (stats.totalFiles > 0) {

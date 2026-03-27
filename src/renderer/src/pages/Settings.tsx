@@ -28,7 +28,7 @@ interface SettingsPageProps {
   userPlan?: 'free' | 'pro' | 'business'
 }
 
-export default function SettingsPage({ userPlan: _userPlan = 'free' }: SettingsPageProps): React.JSX.Element {
+export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
   const [settings, setSettings] = useState<SettingsData>({})
   const [claudeKey, setClaudeKey] = useState('')
   const [openaiKey, setOpenaiKey] = useState('')
