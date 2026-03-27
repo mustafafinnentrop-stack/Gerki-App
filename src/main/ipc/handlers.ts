@@ -13,6 +13,11 @@ import {
   getSettings
 } from '../core/orchestrator'
 import {
+  remoteLogin,
+  verifyStoredToken,
+  clearToken
+} from '../core/remoteAuth'
+import {
   watchFolder,
   unwatchFolder,
   getWatchedFolders,
@@ -344,15 +349,39 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     return registerUser(username, email, password)
   })
 
-  ipcMain.handle('auth:login', (_event, emailOrUsername: string, password: string) => {
+  // Remote-first Login: versucht gerki.app API, fällt auf lokale SQLite-Auth zurück (offline)
+  ipcMain.handle('auth:login', async (_event, emailOrUsername: string, password: string) => {
+    // Remote-Login (nur wenn Email-Format erkannt – Username ist immer lokal)
+    const isEmail = emailOrUsername.includes('@')
+    if (isEmail) {
+      const remote = await remoteLogin(emailOrUsername, password)
+      if (remote.success && remote.user) {
+        return { success: true, user: remote.user }
+      }
+      // Wenn Offline-Cache genutzt wurde, erlauben
+      if (remote.source === 'cache') {
+        return { success: true, user: remote.user }
+      }
+      // Echter Remote-Fehler (falsches Passwort etc.) → direkt zurückgeben
+      if (remote.source === 'remote') {
+        return { success: false, error: remote.error }
+      }
+      // Netzwerkfehler → lokaler Fallback
+    }
+    // Lokaler Fallback (Username-Login oder kein Netz)
     return loginUser(emailOrUsername, password)
   })
 
-  ipcMain.handle('auth:current-user', () => {
+  // Token beim App-Start prüfen (online verifizieren oder Cache nutzen)
+  ipcMain.handle('auth:current-user', async () => {
+    const remoteUser = await verifyStoredToken()
+    if (remoteUser) return remoteUser
+    // Lokaler Fallback (alte lokale Accounts)
     return getCurrentUser()
   })
 
   ipcMain.handle('auth:logout', () => {
+    clearToken()
     logoutUser()
     return { success: true }
   })

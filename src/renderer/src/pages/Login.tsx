@@ -3,10 +3,9 @@ import { Bot, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 interface LoginProps {
   onLogin: (user: { id: string; username: string; email: string; plan: string }) => void
-  onGoToRegister: () => void
 }
 
-export default function Login({ onLogin, onGoToRegister }: LoginProps): React.JSX.Element {
+export default function Login({ onLogin }: LoginProps): React.JSX.Element {
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -110,16 +109,16 @@ export default function Login({ onLogin, onGoToRegister }: LoginProps): React.JS
         <div className="text-center mt-6">
           <span className="text-white/40 text-sm">Noch kein Konto? </span>
           <button
-            onClick={onGoToRegister}
+            onClick={() => window.open('https://gerki.app/register', '_blank')}
             className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
           >
-            Konto erstellen
+            Kostenlos registrieren
           </button>
         </div>
 
         {/* Privacy note */}
         <p className="text-center text-xs text-white/20 mt-6">
-          Alle Daten bleiben lokal auf deinem Gerät gespeichert.
+          Gespräche & Dateien bleiben lokal. Dein Konto wird sicher auf gerki.app gespeichert.
         </p>
       </div>
     </div>

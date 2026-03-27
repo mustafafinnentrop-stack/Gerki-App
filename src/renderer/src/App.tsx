@@ -96,7 +96,7 @@ export default function App(): React.JSX.Element {
 
   // ── Auth ─────────────────────────────────────────────────────────
   if (appState === 'login') {
-    return <Login onLogin={handleAuthSuccess} onGoToRegister={() => setAppState('register')} />
+    return <Login onLogin={handleAuthSuccess} />
   }
 
   if (appState === 'register') {

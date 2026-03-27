@@ -159,10 +159,12 @@ declare global {
           user?: { id: string; username: string; email: string; plan: string; created_at: string }
           error?: string
         }>
+        /** Remote-first Login: versucht gerki.app API, fällt auf lokale Auth zurück (offline) */
         login: (emailOrUsername: string, password: string) => Promise<{
           success: boolean
           user?: { id: string; username: string; email: string; plan: string; created_at: string }
           error?: string
+          source?: 'remote' | 'cache' | 'local'
         }>
         currentUser: () => Promise<{ id: string; username: string; email: string; plan: string; created_at: string } | null>
         logout: () => Promise<{ success: boolean }>
