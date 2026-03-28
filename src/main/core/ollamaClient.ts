@@ -80,7 +80,7 @@ function buildEnvWithOllamaPath(): NodeJS.ProcessEnv {
   }
 }
 
-export const OLLAMA_BASE_URL = 'http://localhost:11434'
+export const OLLAMA_BASE_URL = 'http://127.0.0.1:11434'
 
 // Standard-Modell für Gerki: Mistral 7B (Apache 2.0, 4GB, läuft auf 8GB RAM)
 export const DEFAULT_OLLAMA_MODEL = 'mistral:7b'
