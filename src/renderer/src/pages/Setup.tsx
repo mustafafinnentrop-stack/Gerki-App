@@ -363,7 +363,7 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
       ) : running === false ? (
         <div className="mb-4 p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20">
           <p className="text-xs text-yellow-400/80 mb-3">
-            Ollama ist nicht installiert. Installiere es zuerst, dann komm zurück.
+            Ollama läuft nicht oder ist nicht installiert. Falls bereits installiert, starte es und klicke unten.
           </p>
           <button
             onClick={() => window.gerki.ollama.openDownload()}
