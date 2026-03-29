@@ -142,6 +142,7 @@ declare global {
         pullModel: (modelName: string) => Promise<{ success: boolean; error?: string }>
         setModel: (modelName: string) => Promise<{ success: boolean }>
         openDownload: () => Promise<{ success: boolean }>
+        installAuto: () => Promise<{ success: boolean; error?: string }>
       }
 
       // ── Setup Wizard ──────────────────────────────────────────────

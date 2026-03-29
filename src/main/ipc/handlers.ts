@@ -4,8 +4,11 @@
  */
 
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
-import { readFileSync } from 'fs'
-import { extname, basename } from 'path'
+import { readFileSync, createWriteStream } from 'fs'
+import { extname, basename, join } from 'path'
+import { tmpdir } from 'os'
+import { exec } from 'child_process'
+import { get as httpsGet } from 'https'
 import pdfParse from 'pdf-parse'
 import {
   processMessage,
@@ -330,6 +333,68 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('ollama:open-download', async () => {
     await shell.openExternal('https://ollama.com/download')
     return { success: true }
+  })
+
+  ipcMain.handle('ollama:install-auto', async () => {
+    if (process.platform !== 'win32') {
+      return { success: false, error: 'Nur auf Windows verfügbar' }
+    }
+    try {
+      const destPath = join(tmpdir(), 'OllamaSetup.exe')
+      mainWindow.webContents.send('ollama:install-progress', { status: 'Lade Ollama herunter...', percent: 0 })
+
+      await new Promise<void>((resolve, reject) => {
+        const file = createWriteStream(destPath)
+        let downloaded = 0
+        const totalEstimate = 120 * 1024 * 1024 // ~120 MB estimate
+
+        const doGet = (url: string) => {
+          httpsGet(url, (res) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              doGet(res.headers.location!)
+              return
+            }
+            const total = parseInt(res.headers['content-length'] || '0', 10) || totalEstimate
+            res.on('data', (chunk: Buffer) => {
+              downloaded += chunk.length
+              const percent = Math.round((downloaded / total) * 100)
+              mainWindow.webContents.send('ollama:install-progress', {
+                status: `Lade Ollama herunter... ${Math.round(downloaded / 1024 / 1024)} MB`,
+                percent
+              })
+            })
+            res.pipe(file)
+            file.on('finish', () => { file.close(); resolve() })
+          }).on('error', reject)
+        }
+        doGet('https://ollama.com/download/OllamaSetup.exe')
+      })
+
+      mainWindow.webContents.send('ollama:install-progress', { status: 'Installiere Ollama...', percent: 100 })
+
+      await new Promise<void>((resolve, reject) => {
+        exec(`"${destPath}" /S`, (error) => {
+          if (error) reject(error)
+          else resolve()
+        })
+      })
+
+      // Wait up to 30s for Ollama to start
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 2000))
+        try {
+          const res = await fetch('http://127.0.0.1:11434/api/version', { signal: AbortSignal.timeout(2000) })
+          if (res.ok) {
+            mainWindow.webContents.send('ollama:install-progress', { status: 'Ollama erfolgreich installiert!', percent: 100 })
+            return { success: true }
+          }
+        } catch { /* still starting */ }
+      }
+
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: (error as Error).message }
+    }
   })
 
   ipcMain.handle('setup:open-anthropic', async () => {

@@ -62,7 +62,8 @@ const gerki = {
     start: () => ipcRenderer.invoke('ollama:start'),
     pullModel: (modelName: string) => ipcRenderer.invoke('ollama:pull-model', modelName),
     setModel: (modelName: string) => ipcRenderer.invoke('ollama:set-model', modelName),
-    openDownload: () => ipcRenderer.invoke('ollama:open-download')
+    openDownload: () => ipcRenderer.invoke('ollama:open-download'),
+    installAuto: () => ipcRenderer.invoke('ollama:install-auto')
   },
 
   // ── Setup Wizard ──────────────────────────────────────────────────

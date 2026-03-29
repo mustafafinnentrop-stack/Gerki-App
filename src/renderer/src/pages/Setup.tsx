@@ -303,14 +303,22 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
   const [pulling, setPulling] = useState(false)
   const [pullProgress, setPullProgress] = useState('')
   const [done, setDone] = useState(false)
+  const [installing, setInstalling] = useState(false)
+  const [installProgress, setInstallProgress] = useState('')
+  const [installError, setInstallError] = useState('')
+  const isWindows = navigator.platform.startsWith('Win') || navigator.userAgent.includes('Windows')
 
   useEffect(() => {
     checkOllama()
-    const unsub = window.gerki.on('ollama:pull-progress', (data: unknown) => {
+    const unsubPull = window.gerki.on('ollama:pull-progress', (data: unknown) => {
       const d = data as { status: string; percent?: number }
       setPullProgress(d.percent ? `${d.status} · ${d.percent}%` : d.status)
     })
-    return unsub
+    const unsubInstall = window.gerki.on('ollama:install-progress', (data: unknown) => {
+      const d = data as { status: string; percent?: number }
+      setInstallProgress(d.percent ? `${d.status} (${d.percent}%)` : d.status)
+    })
+    return () => { unsubPull(); unsubInstall() }
   }, [])
 
   const checkOllama = async () => {
@@ -322,6 +330,20 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
       setTimeout(onNext, 1000)
     }
     setChecking(false)
+  }
+
+  const autoInstall = async () => {
+    setInstalling(true)
+    setInstallError('')
+    setInstallProgress('Starte Installation...')
+    const result = await window.gerki.ollama.installAuto()
+    if (result.success) {
+      setInstalling(false)
+      setRunning(true)
+    } else {
+      setInstalling(false)
+      setInstallError(result.error ?? 'Installation fehlgeschlagen')
+    }
   }
 
   const downloadAndPull = async () => {
@@ -361,19 +383,39 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
           <span className="text-sm">Ollama bereit!</span>
         </div>
       ) : running === false ? (
-        <div className="mb-4 p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20">
-          <p className="text-xs text-yellow-400/80 mb-3">
-            Ollama läuft nicht oder ist nicht installiert. Falls bereits installiert, starte es und klicke unten.
-          </p>
-          <button
-            onClick={() => window.gerki.ollama.openDownload()}
-            className="w-full py-2.5 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 text-sm font-medium transition-colors"
-          >
-            Ollama herunterladen →
-          </button>
-          <button onClick={checkOllama} disabled={checking} className="w-full mt-2 py-2 text-xs text-white/30 hover:text-white/50">
-            {checking ? 'Prüfe...' : 'Nach Installation hier klicken'}
-          </button>
+        <div className="mb-4 space-y-2">
+          {isWindows && (
+            <button
+              onClick={autoInstall}
+              disabled={installing}
+              className="w-full py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/30 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              {installing ? (
+                <><Loader2 size={14} className="animate-spin" />{installProgress || 'Installiere...'}</>
+              ) : (
+                'Ollama automatisch installieren'
+              )}
+            </button>
+          )}
+          {installError && (
+            <p className="flex items-center gap-1 text-xs text-red-400 px-1">
+              <AlertCircle size={12} /> {installError}
+            </p>
+          )}
+          <div className="p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20">
+            <p className="text-xs text-yellow-400/80 mb-3">
+              {isWindows ? 'Oder manuell installieren:' : 'Ollama läuft nicht oder ist nicht installiert. Falls bereits installiert, starte es und klicke unten.'}
+            </p>
+            <button
+              onClick={() => window.gerki.ollama.openDownload()}
+              className="w-full py-2.5 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 text-sm font-medium transition-colors"
+            >
+              Ollama manuell herunterladen →
+            </button>
+            <button onClick={checkOllama} disabled={checking} className="w-full mt-2 py-2 text-xs text-white/30 hover:text-white/50">
+              {checking ? 'Prüfe...' : 'Nach Installation hier klicken'}
+            </button>
+          </div>
         </div>
       ) : running ? (
         <button
