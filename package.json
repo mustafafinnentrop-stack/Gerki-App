@@ -58,8 +58,9 @@
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "resources/icon.ico",
-      "requestedExecutionLevel": "user",
-      "artifactName": "Gerki-Setup-${version}.${ext}"
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "Gerki-Setup-${version}.${ext}",
+      "forceCodeSigning": false
     },
     "nsis": {
       "oneClick": false,
