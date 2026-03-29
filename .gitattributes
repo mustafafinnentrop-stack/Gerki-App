@@ -1,0 +1,12 @@
+# Binary files — no line ending conversion
+*.zip binary
+*.exe binary
+*.ico binary
+*.icns binary
+*.7z binary
+*.dmg binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.db binary
