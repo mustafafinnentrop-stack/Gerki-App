@@ -34,3 +34,9 @@ yarn-error.log*
 
 # Electron builder cache
 .cache/
+
+# Extracted release folders (only .exe/.zip/.7z files belong in releases/)
+releases/*/
+releases/**/*.pak
+releases/**/*.dll
+releases/**/*.exe.bak
