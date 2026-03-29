@@ -72,7 +72,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Gerki",
       "runAfterFinish": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
     },
     "mac": {
       "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
