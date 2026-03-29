@@ -6,6 +6,7 @@
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { readFileSync } from 'fs'
 import { extname, basename } from 'path'
+import pdfParse from 'pdf-parse'
 import {
   processMessage,
   saveApiKey,
@@ -427,11 +428,15 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     try {
       if (TEXT_EXTENSIONS.has(ext)) {
         const content = readFileSync(filePath, 'utf-8')
-        // Limit to 50k chars to prevent context overflow
-        const truncated = content.length > 50_000 ? content.slice(0, 50_000) + '\n\n[... Datei wurde auf 50.000 Zeichen begrenzt]' : content
+        const truncated = content.length > 50_000 ? content.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : content
         return { success: true, name: fileName, content: truncated, type: 'text' }
+      } else if (ext === '.pdf') {
+        const buffer = readFileSync(filePath)
+        const data = await pdfParse(buffer)
+        const text = data.text.trim()
+        const truncated = text.length > 50_000 ? text.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : text
+        return { success: true, name: fileName, content: truncated || '[PDF enthält keinen lesbaren Text]', type: 'text' }
       } else {
-        // For non-text files: just return filename, no content
         return { success: true, name: fileName, content: null, type: 'binary' }
       }
     } catch (error) {

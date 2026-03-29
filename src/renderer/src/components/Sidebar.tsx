@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   MessageSquare,
-  Zap,
+  Bot as AgentIcon,
   Brain,
   Settings,
   FolderOpen,
@@ -37,7 +37,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
-  { id: 'skills', icon: Zap, label: 'Skills' },
+  { id: 'agents', icon: AgentIcon, label: 'Agenten' },
   { id: 'memory', icon: Brain, label: 'Memory' },
   { id: 'files', icon: FolderOpen, label: 'Dateien' },
   { id: 'settings', icon: Settings, label: 'Einstellungen' }

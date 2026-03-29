@@ -144,6 +144,35 @@ Assistent: "${assistantResponse.slice(0, 500)}"`
   }
 }
 
+// Fakten mit Ollama extrahieren (async, kein API-Key nötig)
+async function extractFactsWithOllama(
+  userMessage: string,
+  assistantResponse: string,
+  model: string
+): Promise<Array<{ category: string; key: string; value: string }>> {
+  const prompt = `Analysiere dieses Gespräch und extrahiere persönliche Fakten über den Nutzer.
+Gib NUR ein JSON-Array zurück, kein anderer Text. Wenn keine Fakten: []
+Format: [{"category":"person|preference|fact","key":"schlüssel","value":"wert"}]
+
+Nutzer: "${userMessage.slice(0, 300)}"
+Antwort: "${assistantResponse.slice(0, 300)}"`
+
+  try {
+    const res = await fetch('http://127.0.0.1:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+      signal: AbortSignal.timeout(12000)
+    })
+    const data = (await res.json()) as { response: string }
+    const match = data.response.match(/\[[\s\S]*?\]/)
+    if (!match) return []
+    return JSON.parse(match[0])
+  } catch {
+    return []
+  }
+}
+
 // HAUPT-FUNKTION: Nachricht verarbeiten
 export async function processMessage(
   req: OrchestratorRequest,
@@ -334,16 +363,19 @@ export async function processMessage(
   const messageId = saveMessage(conversationId, 'assistant', responseContent, model, skillSlug)
 
   // 9. Neue Fakten im Hintergrund extrahieren und ins Memory speichern
-  const apiKey = model === 'claude'
-    ? getSetting('claude_api_key')
-    : model === 'ollama'
-      ? null  // Ollama braucht keinen API-Key für Fakten-Extraktion
-      : getSetting('openai_api_key')
   let newMemory: Array<{ category: string; key: string; value: string }> = []
-  if (apiKey) {
-    newMemory = await extractFacts(req.userMessage, responseContent, model, apiKey)
-    if (newMemory.length > 0) {
-      rememberFacts(newMemory, skillSlug)
+
+  if (model === 'ollama') {
+    // Ollama: Fakten-Extraktion async im Hintergrund (kein API-Key nötig)
+    const ollamaModelForMemory = getSetting('ollama_model') ?? DEFAULT_OLLAMA_MODEL
+    extractFactsWithOllama(req.userMessage, responseContent, ollamaModelForMemory)
+      .then((facts) => { if (facts.length > 0) rememberFacts(facts, skillSlug) })
+      .catch(() => { /* Kein Blocker */ })
+  } else {
+    const apiKey = model === 'claude' ? getSetting('claude_api_key') : getSetting('openai_api_key')
+    if (apiKey) {
+      newMemory = await extractFacts(req.userMessage, responseContent, model, apiKey)
+      if (newMemory.length > 0) rememberFacts(newMemory, skillSlug)
     }
   }
 

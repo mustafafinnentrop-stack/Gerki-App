@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import ChatPage from './pages/Chat'
-import SkillsPage from './pages/Skills'
+import AgentsPage from './pages/Agents'
 import MemoryPage from './pages/Memory'
 import FilesPage from './pages/Files'
 import SettingsPage from './pages/Settings'
@@ -10,7 +10,7 @@ import SetupWizard from './pages/Setup'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-type Page = 'chat' | 'skills' | 'memory' | 'files' | 'settings' | 'account'
+type Page = 'chat' | 'agents' | 'memory' | 'files' | 'settings' | 'account'
 type AppState = 'loading' | 'login' | 'register' | 'setup' | 'app'
 
 interface UserInfo {
@@ -34,6 +34,7 @@ export default function App(): React.JSX.Element {
   const [page, setPage] = useState<Page>('chat')
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [activeSkill, setActiveSkill] = useState<string | null>(null)
 
   // App-Start: Auth prüfen
   useEffect(() => {
@@ -79,6 +80,20 @@ export default function App(): React.JSX.Element {
 
   const handleNewChat = () => {
     setActiveConversationId(null)
+    setActiveSkill(null)
+    setPage('chat')
+  }
+
+  const handleStartAgentChat = (skill: string) => {
+    setActiveConversationId(null)
+    setActiveSkill(skill)
+    setPage('chat')
+  }
+
+  const handleSelectAgentConversation = (id: string) => {
+    const conv = conversations.find((c) => c.id === id)
+    setActiveSkill(conv?.skill ?? null)
+    setActiveConversationId(id)
     setPage('chat')
   }
 
@@ -135,12 +150,19 @@ export default function App(): React.JSX.Element {
         {page === 'chat' && (
           <ChatPage
             conversationId={activeConversationId}
+            forceSkill={activeSkill ?? undefined}
             onConversationCreated={handleConversationCreated}
             onConversationsChanged={loadConversations}
             userPlan={(user?.plan ?? 'free') as 'free' | 'pro' | 'business'}
           />
         )}
-        {page === 'skills' && <SkillsPage />}
+        {page === 'agents' && (
+          <AgentsPage
+            conversations={conversations}
+            onStartAgentChat={handleStartAgentChat}
+            onSelectConversation={handleSelectAgentConversation}
+          />
+        )}
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
         {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'free') as 'free' | 'pro' | 'business'} />}

@@ -41,6 +41,7 @@ interface AttachedFile {
 
 interface ChatPageProps {
   conversationId: string | null
+  forceSkill?: string
   onConversationCreated: (id: string) => void
   onConversationsChanged: () => void
   userPlan: 'free' | 'pro' | 'business'
@@ -138,7 +139,7 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
       <div className={`flex-1 max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
         <div className="relative">
           <div
-            className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+            className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap select-text cursor-text ${
               isUser
                 ? 'bg-primary/20 text-white rounded-tr-sm'
                 : 'bg-surface text-white/90 rounded-tl-sm border border-white/5'
@@ -317,6 +318,7 @@ function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Elemen
 
 export default function ChatPage({
   conversationId,
+  forceSkill,
   onConversationCreated,
   onConversationsChanged,
   userPlan
@@ -461,7 +463,8 @@ export default function ChatPage({
         userMessage: fullMessage,
         conversationId: currentConvId ?? undefined,
         model: selectedModel,
-        agentMode
+        agentMode,
+        forceSkill: forceSkill ?? undefined
       })
 
       if (result.success && result.data) {
@@ -538,6 +541,17 @@ export default function ChatPage({
     <div className="flex flex-col h-screen">
       {showProModal && <ProUpgradeModal onClose={() => setShowProModal(false)} />}
 
+      {/* Agent-Badge wenn ein Skill erzwungen ist */}
+      {forceSkill && forceSkill !== 'general' && (
+        <div className={`flex items-center gap-2 px-4 py-2 border-b border-white/5 ${SKILL_COLORS[forceSkill] ?? 'text-white/40'}`}>
+          <Zap size={12} />
+          <span className="text-xs font-medium">
+            {SKILL_LABELS[forceSkill] ?? forceSkill}
+          </span>
+          <span className="text-xs text-white/20">· Spezialist-Modus</span>
+        </div>
+      )}
+
       {/* Empty state */}
       {isEmpty && (
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
@@ -547,7 +561,7 @@ export default function ChatPage({
           <h2 className="text-2xl font-semibold text-white mb-2">Hallo, ich bin Gerki</h2>
           <p className="text-white/40 text-sm max-w-md">
             Deine persönliche KI – lokal und privat auf deinem Gerät.
-            Powered by Ollama. Schreib einfach los.
+            Schreib einfach los.
           </p>
 
           {!isPro && (
@@ -655,18 +669,26 @@ export default function ChatPage({
           />
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Agent Mode Toggle */}
+            {/* Agent Mode Toggle – nur sinnvoll mit Claude + Openclaw */}
             <button
               onClick={() => setAgentMode(!agentMode)}
-              title={agentMode ? 'Agent-Modus aktiv (Openclaw)' : 'Agent-Modus aktivieren'}
+              title={
+                selectedModel !== 'claude'
+                  ? 'Desktop-Agent: Nur mit Claude verfügbar. Modell wechseln.'
+                  : agentMode
+                  ? 'Desktop-Agent aktiv – Gerki kann deinen Bildschirm steuern (braucht Openclaw)'
+                  : 'Desktop-Agent aktivieren (braucht Claude + Openclaw)'
+              }
               className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors ${
-                agentMode
+                agentMode && selectedModel === 'claude'
                   ? 'bg-accent/20 text-accent border border-accent/30'
+                  : selectedModel !== 'claude'
+                  ? 'text-white/10 cursor-not-allowed'
                   : 'text-white/20 hover:text-white/50'
               }`}
             >
               <Zap size={11} />
-              Agent
+              Desktop-Agent
             </button>
 
             {/* Model picker */}
