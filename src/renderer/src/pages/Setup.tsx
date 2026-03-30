@@ -77,7 +77,7 @@ function WelcomeStep({ onNext }: { onNext: () => void }): React.JSX.Element {
           { icon: Zap, label: 'Lokale KI – kein API-Key nötig', sub: 'Ollama läuft direkt auf deinem PC, gratis' },
           { icon: FolderOpen, label: 'Zugriff auf deine Dateien', sub: 'Gerki findet alles auf deinem PC' },
           { icon: Brain, label: '8 spezialisierte Skills', sub: 'Behördenpost, Recht, E-Mail & mehr' },
-          { icon: Monitor, label: 'Claude & GPT-4 optional (Pro)', sub: 'Eigener API-Key erforderlich' }
+          { icon: Monitor, label: 'Claude & GPT-4 optional (Business)', sub: 'Eigener API-Key erforderlich' }
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -138,7 +138,7 @@ function ClaudeStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         </div>
         <div>
           <h2 className="text-lg font-semibold text-white">Claude API-Key</h2>
-          <p className="text-xs text-white/40">Optional · Nur für Pro-Nutzer erforderlich</p>
+          <p className="text-xs text-white/40">Optional · Nur für Business-Nutzer erforderlich</p>
         </div>
       </div>
 

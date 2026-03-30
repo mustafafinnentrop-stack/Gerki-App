@@ -16,27 +16,48 @@ interface AccountPageProps {
 
 const PLAN_CONFIG = {
   free: {
-    label: 'Free',
+    label: 'Testversion',
     color: 'text-white/60',
     bg: 'bg-white/10',
     border: 'border-white/10',
-    features: ['Ollama (lokale KI)', '8 Skills', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Claude (Anthropic)', 'ChatGPT / GPT-4', 'Prioritäts-Support']
+    price: null,
+    features: ['Ollama (lokale KI, offline)', 'Allgemeiner Assistent', 'Memory-System', 'Datei-Indexierung'],
+    missing: ['Behördenpost & Dokumente', 'Claude & GPT-4', 'Cloud-Sync']
+  },
+  standard: {
+    label: 'Standard',
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
+    price: '39,90 € / Monat',
+    features: ['Ollama (lokale KI, offline)', 'Openclaw (Desktop-Automatisierung)', '2 Agents: Behördenpost + Dokumente', 'Memory-System', 'Datei-Indexierung'],
+    missing: ['Claude & GPT-4', 'Cloud-Sync', 'Rechtsberater, E-Mail, HR-Assistent']
   },
   pro: {
-    label: 'Pro',
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/20',
-    features: ['Ollama (lokale KI)', '8 Skills', 'Memory-System', 'Datei-Indexierung', 'Claude (Anthropic)', 'ChatGPT / GPT-4', 'Prioritäts-Support'],
-    missing: []
+    label: 'Standard',
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
+    price: '39,90 € / Monat',
+    features: ['Ollama (lokale KI, offline)', 'Openclaw (Desktop-Automatisierung)', '2 Agents: Behördenpost + Dokumente', 'Memory-System'],
+    missing: ['Claude & GPT-4', 'Cloud-Sync']
   },
   business: {
     label: 'Business',
     color: 'text-purple-400',
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/20',
-    features: ['Alles aus Pro', 'Unbegrenzte API-Nutzung', 'Team-Funktionen', 'Dedicated Support'],
+    price: '69,90 € / Monat',
+    features: ['Alles aus Standard', 'Claude (Anthropic) & GPT-4', '5 Agents: + Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync (mehrere Geräte)', 'E-Mail Support 48h'],
+    missing: ['Marketing-Agent', 'Multi-User / Team']
+  },
+  enterprise: {
+    label: 'Enterprise',
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/20',
+    price: 'Auf Anfrage',
+    features: ['Alles aus Business', 'Alle 8 Agents', 'Multi-User / Team-Accounts', 'Individuelle Einrichtung', 'Priority Support (24h, Telefon)'],
     missing: []
   }
 }
@@ -53,7 +74,7 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const plan = PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.free
-  const isFree = user.plan === 'free'
+  const canUpgrade = user.plan === 'free' || user.plan === 'standard' || user.plan === 'pro'
 
   const formatDate = (dateStr: string) => {
     try {
@@ -108,7 +129,6 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   return (
     <div className="h-screen overflow-y-auto">
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white">Mein Konto</h1>
           <p className="text-white/40 text-sm mt-1">Verwalte dein Gerki-Profil und Abonnement</p>
@@ -150,9 +170,7 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
           <div className={`rounded-xl p-4 border ${plan.bg} ${plan.border} mb-4`}>
             <div className="flex items-center justify-between mb-3">
               <span className={`font-semibold text-lg ${plan.color}`}>{plan.label}</span>
-              {isFree && <span className="text-white/40 text-sm">0 € / Monat</span>}
-              {user.plan === 'pro' && <span className="text-yellow-400 text-sm">49 € / Monat</span>}
-              {user.plan === 'business' && <span className="text-purple-400 text-sm">99 € / Monat</span>}
+              {plan.price && <span className={`text-sm ${plan.color}`}>{plan.price}</span>}
             </div>
             <div className="space-y-1.5">
               {plan.features.map((f) => (
@@ -170,17 +188,21 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
             </div>
           </div>
 
-          {isFree && (
+          {canUpgrade && (
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
-              <p className="text-white/80 text-sm font-medium mb-1">Upgrade auf Pro – 49 €/Monat</p>
+              <p className="text-white/80 text-sm font-medium mb-1">
+                {user.plan === 'free' ? 'Upgrade auf Standard – 39,90 €/Monat' : 'Upgrade auf Business – 69,90 €/Monat'}
+              </p>
               <p className="text-white/40 text-xs mb-3">
-                Erhalte Zugang zu Claude (Anthropic) und ChatGPT/GPT-4 zusätzlich zu deiner lokalen KI.
+                {user.plan === 'free'
+                  ? 'Starte jetzt mit Behördenpost & Dokumenten-Assistent. 14 Tage kostenlos testen.'
+                  : 'Erhalte Zugang zu Claude & GPT-4 sowie 5 Agents. Cloud-Sync inklusive.'}
               </p>
               <button
-                onClick={() => window.open('https://gerki.app/upgrade', '_blank')}
+                onClick={() => window.gerki.setup.openRegister()}
                 className="w-full bg-primary hover:bg-primary/80 text-white font-medium py-2 rounded-lg text-sm transition-colors"
               >
-                Auf Pro upgraden
+                Jetzt upgraden auf gerki.app
               </button>
             </div>
           )}
@@ -220,7 +242,7 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
                 type={showPasswords ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Mindestens 6 Zeichen"
+                placeholder="Mindestens 8 Zeichen"
                 className="w-full bg-bg border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm
                            placeholder:text-white/20 outline-none focus:border-primary/50 transition-colors"
               />
@@ -236,19 +258,14 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
                            placeholder:text-white/20 outline-none focus:border-primary/50 transition-colors"
               />
             </div>
-
             {pwError && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-sm">
-                {pwError}
-              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-sm">{pwError}</div>
             )}
             {pwSuccess && (
               <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-2.5 text-green-400 text-sm flex items-center gap-2">
-                <CheckCircle2 size={14} />
-                Passwort erfolgreich geändert.
+                <CheckCircle2 size={14} />Passwort erfolgreich geändert.
               </div>
             )}
-
             <button
               type="submit"
               disabled={pwLoading || !oldPassword || !newPassword || !confirmPassword}

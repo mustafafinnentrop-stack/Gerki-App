@@ -153,7 +153,7 @@ export default function App(): React.JSX.Element {
             forceSkill={activeSkill ?? undefined}
             onConversationCreated={handleConversationCreated}
             onConversationsChanged={loadConversations}
-            userPlan={(user?.plan ?? 'free') as 'free' | 'pro' | 'business'}
+            userPlan={(user?.plan ?? 'free') as 'free' | 'standard' | 'pro' | 'business' | 'enterprise'}
           />
         )}
         {page === 'agents' && (
@@ -165,7 +165,7 @@ export default function App(): React.JSX.Element {
         )}
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
-        {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'free') as 'free' | 'pro' | 'business'} />}
+        {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'free') as 'free' | 'standard' | 'pro' | 'business' | 'enterprise'} />}
         {page === 'account' && user && (
           <AccountPage user={user} onLogout={handleLogout} />
         )}

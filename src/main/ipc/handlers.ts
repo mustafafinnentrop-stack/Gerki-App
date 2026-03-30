@@ -21,6 +21,7 @@ import {
   verifyStoredToken,
   clearToken
 } from '../core/remoteAuth'
+import { isDevAccount, loginDevAccount } from '../core/devAccounts'
 import {
   watchFolder,
   unwatchFolder,
@@ -459,22 +460,26 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   // Remote-first Login: versucht gerki.app API, fällt auf lokale SQLite-Auth zurück (offline)
   ipcMain.handle('auth:login', async (_event, emailOrUsername: string, password: string) => {
-    // Remote-Login (nur wenn Email-Format erkannt – Username ist immer lokal)
     const isEmail = emailOrUsername.includes('@')
+
+    // Dev-Account Bypass (Enterprise, kein Server nötig)
+    if (isEmail && isDevAccount(emailOrUsername)) {
+      const devUser = loginDevAccount(emailOrUsername, password)
+      if (devUser) return { success: true, user: devUser }
+      return { success: false, error: 'Falsches Dev-Passwort.' }
+    }
+
     if (isEmail) {
       const remote = await remoteLogin(emailOrUsername, password)
       if (remote.success && remote.user) {
         return { success: true, user: remote.user }
       }
-      // Wenn Offline-Cache genutzt wurde, erlauben
       if (remote.source === 'cache') {
         return { success: true, user: remote.user }
       }
-      // Echter Remote-Fehler (falsches Passwort etc.) → direkt zurückgeben
       if (remote.source === 'remote') {
         return { success: false, error: remote.error }
       }
-      // Netzwerkfehler → lokaler Fallback
     }
     // Lokaler Fallback (Username-Login oder kein Netz)
     return loginUser(emailOrUsername, password)

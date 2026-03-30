@@ -25,7 +25,7 @@ interface OllamaStatus {
 }
 
 interface SettingsPageProps {
-  userPlan?: 'free' | 'pro' | 'business'
+  userPlan?: 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
 }
 
 export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {

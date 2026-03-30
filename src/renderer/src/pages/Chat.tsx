@@ -44,7 +44,7 @@ interface ChatPageProps {
   forceSkill?: string
   onConversationCreated: (id: string) => void
   onConversationsChanged: () => void
-  userPlan: 'free' | 'pro' | 'business'
+  userPlan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
 }
 
 const SKILL_LABELS: Record<string, string> = {
@@ -69,12 +69,12 @@ const SKILL_COLORS: Record<string, string> = {
   marketing: 'text-pink-400'
 }
 
-// Ollama = Free + Pro. Claude/GPT = Pro only.
+// Ollama = alle Pläne. Claude/GPT = Business+ only.
 const MODEL_OPTIONS = [
-  { key: 'ollama', label: '⚡ Lokal (Ollama)', proOnly: false, description: 'Kostenlos, lokal, privat' },
-  { key: 'claude', label: 'Claude (Anthropic)', proOnly: true, description: 'Claude 3.5 Sonnet' },
-  { key: 'gpt-4', label: 'GPT-4', proOnly: true, description: 'OpenAI GPT-4' },
-  { key: 'gpt-3.5', label: 'GPT-3.5', proOnly: true, description: 'OpenAI GPT-3.5 Turbo' }
+  { key: 'ollama', label: '⚡ Lokal (Ollama)', businessOnly: false, description: 'Kostenlos, lokal, privat' },
+  { key: 'claude', label: 'Claude (Anthropic)', businessOnly: true, description: 'Claude 3.5 Sonnet' },
+  { key: 'gpt-4', label: 'GPT-4', businessOnly: true, description: 'OpenAI GPT-4' },
+  { key: 'gpt-3.5', label: 'GPT-3.5', businessOnly: true, description: 'OpenAI GPT-3.5 Turbo' }
 ]
 
 const MODEL_LABELS: Record<string, string> = Object.fromEntries(
@@ -277,17 +277,17 @@ function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Elemen
             <Crown size={20} className="text-yellow-400" />
           </div>
           <div>
-            <h3 className="text-white font-semibold">Pro erforderlich</h3>
-            <p className="text-white/40 text-sm">Claude & GPT-4 sind Pro-Features</p>
+            <h3 className="text-white font-semibold">Business erforderlich</h3>
+            <p className="text-white/40 text-sm">Claude & GPT-4 sind Business-Features</p>
           </div>
         </div>
 
         <p className="text-white/60 text-sm mb-5">
-          Mit Gerki Pro erhältst du Zugang zu Claude (Anthropic) und ChatGPT/GPT-4 – zusätzlich zur lokalen KI.
+          Mit Gerki Business erhältst du Zugang zu Claude (Anthropic) und ChatGPT/GPT-4 – zusätzlich zur lokalen KI.
         </p>
 
         <div className="space-y-2 mb-5">
-          {['Claude 3.5 Sonnet & Opus', 'GPT-4 & GPT-3.5', 'Lokale KI (Ollama) inklusive', '8 KI-Skills', 'Prioritäts-Support'].map((f) => (
+          {['Claude 3.5 Sonnet', 'GPT-4 & GPT-3.5', 'Lokale KI (Ollama) inklusive', '5 KI-Agents', 'Cloud-Sync', 'E-Mail Support'].map((f) => (
             <div key={f} className="flex items-center gap-2 text-sm text-white/70">
               <CheckCircle2 size={13} className="text-green-400" />
               {f}
@@ -300,7 +300,7 @@ function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Elemen
             onClick={() => window.open('https://gerki.app/upgrade', '_blank')}
             className="w-full bg-primary hover:bg-primary/80 text-white font-medium py-2.5 rounded-xl text-sm transition-colors"
           >
-            Pro für 49 €/Monat – Jetzt upgraden
+            Business für 69,90 €/Monat – Jetzt upgraden
           </button>
           <button
             onClick={onClose}
@@ -339,7 +339,7 @@ export default function ChatPage({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const isPro = userPlan === 'pro' || userPlan === 'business'
+  const isPro = userPlan === 'business' || userPlan === 'enterprise'
 
   // Sync external conversationId
   useEffect(() => {
@@ -351,7 +351,7 @@ export default function ChatPage({
     window.gerki.settings.get().then((s) => {
       const preferred = s.preferred_model ?? 'ollama'
       const modelOption = MODEL_OPTIONS.find((m) => m.key === preferred)
-      if (modelOption?.proOnly && !isPro) {
+      if (modelOption?.businessOnly && !isPro) {
         setSelectedModel('ollama')
       } else {
         setSelectedModel(preferred)
@@ -525,7 +525,7 @@ export default function ChatPage({
 
   const handleModelSelect = (key: string) => {
     const option = MODEL_OPTIONS.find((m) => m.key === key)
-    if (option?.proOnly && !isPro) {
+    if (option?.businessOnly && !isPro) {
       setShowModelPicker(false)
       setShowProModal(true)
       return
@@ -568,7 +568,7 @@ export default function ChatPage({
             <div className="mt-4 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2.5">
               <Zap size={14} className="text-yellow-400" />
               <span className="text-yellow-400 text-sm">
-                Lokale KI aktiv · <button onClick={() => setShowProModal(true)} className="underline hover:no-underline">Upgrade auf Pro für Claude & GPT-4</button>
+                Lokale KI aktiv · <button onClick={() => setShowProModal(true)} className="underline hover:no-underline">Upgrade auf Business für Claude & GPT-4</button>
               </span>
             </div>
           )}
@@ -703,7 +703,7 @@ export default function ChatPage({
               {showModelPicker && (
                 <div className="absolute bottom-full right-0 mb-2 bg-surface border border-white/10 rounded-xl overflow-hidden shadow-xl min-w-[200px]">
                   {MODEL_OPTIONS.map((option) => {
-                    const isLocked = option.proOnly && !isPro
+                    const isLocked = option.businessOnly && !isPro
                     return (
                       <button
                         key={option.key}
@@ -719,7 +719,7 @@ export default function ChatPage({
                         {isLocked ? (
                           <div className="flex items-center gap-1">
                             <Lock size={10} className="text-yellow-500/60" />
-                            <span className="text-xs text-yellow-500/60 font-medium">Pro</span>
+                            <span className="text-xs text-yellow-500/60 font-medium">Business</span>
                           </div>
                         ) : null}
                       </button>
