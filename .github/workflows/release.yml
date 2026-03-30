@@ -1,0 +1,123 @@
+name: Build & Release
+
+# Trigger: git tag v1.0.0 && git push --tags
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # ─── Windows Build ───────────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Dependencies installieren
+        run: npm ci
+
+      - name: Native modules neu bauen (better-sqlite3 etc.)
+        run: npx @electron/rebuild
+
+      - name: Windows NSIS-Installer bauen
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Artifact hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/Gerki-Setup-*.exe
+          retention-days: 1
+
+  # ─── macOS Build ────────────────────────────────────────────────────
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Dependencies installieren
+        run: npm ci
+
+      - name: Native modules neu bauen
+        run: npx @electron/rebuild
+
+      - name: macOS DMG bauen (Intel + Apple Silicon)
+        run: npm run build:mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Artifact hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-installer
+          path: dist/Gerki-*.dmg
+          retention-days: 1
+
+  # ─── GitHub Release erstellen ────────────────────────────────────────
+  release:
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/
+
+      - name: macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-installer
+          path: dist/
+
+      - name: GitHub Release erstellen + Dateien hochladen
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Gerki ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Gerki ${{ github.ref_name }}
+
+            ### Download
+            | Betriebssystem | Datei |
+            |---|---|
+            | Windows 10/11 (x64) | `Gerki-Setup-${{ github.ref_name }}.exe` |
+            | macOS Intel | `Gerki-${{ github.ref_name }}-x64.dmg` |
+            | macOS Apple Silicon | `Gerki-${{ github.ref_name }}-arm64.dmg` |
+
+            ### Systemanforderungen
+            - Windows 10/11 (64-bit)
+            - macOS 12+ (Monterey oder neuer)
+            - 4 GB RAM (8 GB empfohlen für Ollama)
+            - 2 GB freier Speicherplatz
+
+            ### Ersteinrichtung
+            Gerki startet einen Setup-Wizard der durch die Installation von Ollama und OpenClaw führt.
+          files: |
+            dist/*.exe
+            dist/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

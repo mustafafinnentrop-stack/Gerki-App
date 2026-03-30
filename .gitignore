@@ -35,9 +35,14 @@ yarn-error.log*
 # Electron builder cache
 .cache/
 
-# Extracted/unpacked build artifacts (only final installers belong in setup/)
+# Installer-Binaries werden via GitHub Releases verteilt, nicht im Git-Repo
+setup/windows/*.exe
+setup/windows/*.msi
 setup/windows/win-unpacked/
-setup/windows/*.pak
-setup/windows/*.dll
-setup/windows/*.exe.bak
+setup/mac/*.dmg
 setup/mac/mac-unpacked/
+# dist/ Buildartefakte
+dist/*.exe
+dist/*.dmg
+dist/*.zip
+dist/*.7z
