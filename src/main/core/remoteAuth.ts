@@ -25,6 +25,7 @@ function getApiBase(): string {
 
 const TOKEN_KEY = 'remote_auth_token'
 const USER_CACHE_KEY = 'remote_user_cache'
+const LAST_VERIFIED_KEY = 'remote_last_verified_at'
 
 export interface RemoteUser {
   id: string
@@ -83,9 +84,16 @@ export function clearToken(): void {
 // ── Nutzer-Cache (für Offline-Betrieb) ─────────────────────────────────────
 
 function cacheUser(user: RemoteUser): void {
-  getDB()
-    .prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
-    .run(USER_CACHE_KEY, JSON.stringify(user))
+  const db = getDB()
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(USER_CACHE_KEY, JSON.stringify(user))
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(LAST_VERIFIED_KEY, String(Date.now()))
+}
+
+export function getLastVerifiedAt(): number {
+  const row = getDB()
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get(LAST_VERIFIED_KEY) as { value: string } | undefined
+  return row ? parseInt(row.value, 10) : 0
 }
 
 export function getCachedUser(): RemoteUser | null {

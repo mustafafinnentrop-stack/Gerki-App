@@ -20,8 +20,8 @@ import { getOpenclawClient } from './openclawClient'
 import { runAgenticLoop } from './agenticLoop'
 import type { AgentStep } from './agenticLoop'
 import { getOllamaClient, DEFAULT_OLLAMA_MODEL } from './ollamaClient'
-import { checkAccess } from './planEnforcement'
-import { getCachedUser } from './remoteAuth'
+import { checkAccess, getEffectivePlan } from './planEnforcement'
+import { getCachedUser, getLastVerifiedAt } from './remoteAuth'
 import { v4 as uuidv4 } from 'uuid'
 
 export type AIModel = 'claude' | 'gpt-4' | 'gpt-3.5' | 'ollama'
@@ -187,9 +187,10 @@ export async function processMessage(
   const skillSlug = req.forceSkill ?? detectSkill(req.userMessage)
   const skill = getSkill(skillSlug) ?? getSkill('general')!
 
-  // Plan-Enforcement: Skill und Modell prüfen
+  // Plan-Enforcement: effektiven Plan bestimmen (Offline max. 7 Tage)
   const currentUser = getCachedUser()
-  const userPlan = currentUser?.plan ?? 'free'
+  const rawPlan = currentUser?.plan ?? 'free'
+  const userPlan = getEffectivePlan(rawPlan, getLastVerifiedAt())
   const access = checkAccess(userPlan, skillSlug, model)
   if (!access.allowed) {
     throw new Error(access.error)
