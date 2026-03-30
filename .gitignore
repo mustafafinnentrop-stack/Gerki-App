@@ -35,8 +35,9 @@ yarn-error.log*
 # Electron builder cache
 .cache/
 
-# Extracted release folders (only .exe/.zip/.7z files belong in releases/)
-releases/*/
-releases/**/*.pak
-releases/**/*.dll
-releases/**/*.exe.bak
+# Extracted/unpacked build artifacts (only final installers belong in setup/)
+setup/windows/win-unpacked/
+setup/windows/*.pak
+setup/windows/*.dll
+setup/windows/*.exe.bak
+setup/mac/mac-unpacked/
