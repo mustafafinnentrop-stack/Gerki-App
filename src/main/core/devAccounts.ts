@@ -29,7 +29,7 @@ export function loginDevAccount(email: string, password: string): RemoteUser | n
     id: `dev-${account.username}`,
     email: account.email,
     username: account.username,
-    plan: 'enterprise',
+    plan: 'business',
     created_at: '2026-01-01T00:00:00.000Z'
   }
 }

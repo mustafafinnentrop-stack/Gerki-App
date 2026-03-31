@@ -31,7 +31,7 @@ export interface RemoteUser {
   id: string
   email: string
   username: string
-  plan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
+  plan: 'free' | 'standard' | 'pro' | 'business'
   created_at: string
 }
 

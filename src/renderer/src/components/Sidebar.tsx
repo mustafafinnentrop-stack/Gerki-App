@@ -77,7 +77,7 @@ export default function Sidebar({
   onSelectConversation,
   user
 }: SidebarProps): React.JSX.Element {
-  const isPro = user?.plan === 'business' || user?.plan === 'enterprise'
+  const isPro = user?.plan === 'business'
 
   return (
     <aside className="w-60 flex flex-col bg-surface border-r border-white/5 h-screen">

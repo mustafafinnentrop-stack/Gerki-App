@@ -1,12 +1,11 @@
 /**
  * Plan-Enforcement für Gerki
  *
- * Pläne:
- *   free       – Testphase / kein aktives Abo → nur Ollama, nur general
- *   standard   – 39,90 €/Mo → Ollama + Openclaw, 2 Agents (Behördenpost + Dokumente)
- *   pro        – Alias für standard (Legacy)
- *   business   – 69,90 €/Mo → alle Modelle, 5 Agents + Cloud-Sync
- *   enterprise – auf Anfrage → alle 8 Agents + Priority Support + Multi-User
+ * Pläne (JWT `plan`-Wert):
+ *   free     – Testphase → nur Ollama, nur general
+ *   standard – 39,90 €/Mo → 2 Agents (Behördenpost + Dokumente), Ollama
+ *   pro      – 59,90 €/Mo → 5 Agents + Cloud-Sync, Ollama
+ *   business – 89,90 €/Mo → alle 8 Agents, Claude/GPT-4, Multi-User, Cloud-Sync
  *
  * Anti-Cheat:
  *   - Plan kommt ausschließlich aus serverside-signiertem JWT (gerki.app)
@@ -16,43 +15,39 @@
  *   - Gerät-Fingerprint serverside gespeichert
  */
 
-export type Plan = 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
+export type Plan = 'free' | 'standard' | 'pro' | 'business'
 
 // Welche Skills sind pro Plan erlaubt?
 const ALLOWED_SKILLS: Record<Plan, string[]> = {
-  free:       ['general'],
-  standard:   ['general', 'behoerdenpost', 'dokumenten-assistent'],
-  pro:        ['general', 'behoerdenpost', 'dokumenten-assistent'],
-  business:   ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung'],
-  enterprise: ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung', 'marketing']
+  free:     ['general'],
+  standard: ['general', 'behoerdenpost', 'dokumenten-assistent'],
+  pro:      ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung'],
+  business: ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung', 'marketing']
 }
 
 // Welche Modelle sind pro Plan erlaubt?
 const ALLOWED_MODELS: Record<Plan, string[]> = {
-  free:       ['ollama'],
-  standard:   ['ollama'],
-  pro:        ['ollama'],
-  business:   ['ollama', 'claude', 'gpt-4', 'gpt-3.5'],
-  enterprise: ['ollama', 'claude', 'gpt-4', 'gpt-3.5']
+  free:     ['ollama'],
+  standard: ['ollama'],
+  pro:      ['ollama'],
+  business: ['ollama', 'claude', 'gpt-4', 'gpt-3.5']
 }
 
-// Cloud-Sync nur ab Business
-export const CLOUD_SYNC_PLANS: Plan[] = ['business', 'enterprise']
+// Cloud-Sync ab Pro
+export const CLOUD_SYNC_PLANS: Plan[] = ['pro', 'business']
 
 const PLAN_NAMES: Record<Plan, string> = {
-  free:       'Testversion',
-  standard:   'Standard',
-  pro:        'Standard',
-  business:   'Business',
-  enterprise: 'Enterprise'
+  free:     'Testversion',
+  standard: 'Standard',
+  pro:      'Pro',
+  business: 'Business'
 }
 
 const UPGRADE_HINTS: Record<Plan, string> = {
-  free:       'Upgrade auf Standard (39,90 €/Mo) um diesen Assistenten zu nutzen.',
-  standard:   'Upgrade auf Business (69,90 €/Mo) um diesen Assistenten zu nutzen.',
-  pro:        'Upgrade auf Business (69,90 €/Mo) um diesen Assistenten zu nutzen.',
-  business:   'Kontaktiere uns für Enterprise-Zugang unter gerki.app/enterprise.',
-  enterprise: ''
+  free:     'Upgrade auf Standard (39,90 €/Mo) um diesen Assistenten zu nutzen.',
+  standard: 'Upgrade auf Pro (59,90 €/Mo) um diesen Assistenten zu nutzen.',
+  pro:      'Upgrade auf Business (89,90 €/Mo) um diesen Assistenten zu nutzen.',
+  business: ''
 }
 
 // Max. Offline-Tage bevor Plan auf free zurückfällt
@@ -109,5 +104,7 @@ export function checkAccess(
 export function getEffectivePlan(plan: string, lastVerifiedAt: number): Plan {
   const daysSinceVerify = (Date.now() - lastVerifiedAt) / (1000 * 60 * 60 * 24)
   if (daysSinceVerify > MAX_OFFLINE_DAYS) return 'free'
+  // Legacy-Mapping: 'enterprise' → 'business' (alte JWT-Werte)
+  if (plan === 'enterprise') return 'business'
   return (plan as Plan) in ALLOWED_SKILLS ? (plan as Plan) : 'free'
 }

@@ -44,7 +44,7 @@ interface ChatPageProps {
   forceSkill?: string
   onConversationCreated: (id: string) => void
   onConversationsChanged: () => void
-  userPlan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
+  userPlan: 'free' | 'standard' | 'pro' | 'business'
 }
 
 const SKILL_LABELS: Record<string, string> = {
@@ -277,17 +277,17 @@ function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Elemen
             <Crown size={20} className="text-yellow-400" />
           </div>
           <div>
-            <h3 className="text-white font-semibold">Business erforderlich</h3>
-            <p className="text-white/40 text-sm">Claude & GPT-4 sind Business-Features</p>
+            <h3 className="text-white font-semibold">Business-Plan erforderlich</h3>
+            <p className="text-white/40 text-sm">Top-KI-Modelle sind im Business-Plan</p>
           </div>
         </div>
 
         <p className="text-white/60 text-sm mb-5">
-          Mit Gerki Business erhältst du Zugang zu Claude (Anthropic) und ChatGPT/GPT-4 – zusätzlich zur lokalen KI.
+          Mit Gerki Business erhältst du alle 8 Agenten, Claude (Anthropic) und GPT-4 – plus Multi-User und Cloud-Sync.
         </p>
 
         <div className="space-y-2 mb-5">
-          {['Claude 3.5 Sonnet', 'GPT-4 & GPT-3.5', 'Lokale KI (Ollama) inklusive', '5 KI-Agents', 'Cloud-Sync', 'E-Mail Support'].map((f) => (
+          {['Alle 8 Agenten inkl. Marketing', 'Claude 3.5 Sonnet & GPT-4', 'KI läuft lokal (Ollama) inklusive', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team', 'Priority Support 24h'].map((f) => (
             <div key={f} className="flex items-center gap-2 text-sm text-white/70">
               <CheckCircle2 size={13} className="text-green-400" />
               {f}
@@ -300,7 +300,7 @@ function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Elemen
             onClick={() => window.open('https://gerki.app/upgrade', '_blank')}
             className="w-full bg-primary hover:bg-primary/80 text-white font-medium py-2.5 rounded-xl text-sm transition-colors"
           >
-            Business für 69,90 €/Monat – Jetzt upgraden
+            Business für 89,90 €/Monat – Jetzt upgraden
           </button>
           <button
             onClick={onClose}
@@ -339,7 +339,7 @@ export default function ChatPage({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const isPro = userPlan === 'business' || userPlan === 'enterprise'
+  const isPro = userPlan === 'business'
 
   // Sync external conversationId
   useEffect(() => {
@@ -560,7 +560,7 @@ export default function ChatPage({
           </div>
           <h2 className="text-2xl font-semibold text-white mb-2">Hallo, ich bin Gerki</h2>
           <p className="text-white/40 text-sm max-w-md">
-            Deine persönliche KI – lokal und privat auf deinem Gerät.
+            Dein Assistent für Recht, Buchhaltung, Behördenpost & mehr.
             Schreib einfach los.
           </p>
 
@@ -568,7 +568,7 @@ export default function ChatPage({
             <div className="mt-4 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2.5">
               <Zap size={14} className="text-yellow-400" />
               <span className="text-yellow-400 text-sm">
-                Lokale KI aktiv · <button onClick={() => setShowProModal(true)} className="underline hover:no-underline">Upgrade auf Business für Claude & GPT-4</button>
+                KI läuft lokal · <button onClick={() => setShowProModal(true)} className="underline hover:no-underline">Upgrade auf Business für Claude & GPT-4</button>
               </span>
             </div>
           )}

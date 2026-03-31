@@ -21,8 +21,8 @@ const PLAN_CONFIG = {
     bg: 'bg-white/10',
     border: 'border-white/10',
     price: null,
-    features: ['Ollama (lokale KI, offline)', 'Allgemeiner Assistent', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Behördenpost & Dokumente', 'Claude & GPT-4', 'Cloud-Sync']
+    features: ['Allgemeiner Assistent', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
+    missing: ['Behördenpost & Dokumente-Agent', 'Rechtsberater, HR, Buchhaltung', 'Cloud-Sync']
   },
   standard: {
     label: 'Standard',
@@ -30,34 +30,25 @@ const PLAN_CONFIG = {
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/20',
     price: '39,90 € / Monat',
-    features: ['Ollama (lokale KI, offline)', 'Openclaw (Desktop-Automatisierung)', '2 Agents: Behördenpost + Dokumente', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Claude & GPT-4', 'Cloud-Sync', 'Rechtsberater, E-Mail, HR-Assistent']
+    features: ['2 Agenten: Behördenpost + Dokumente', 'Desktop-Automatisierung (Openclaw)', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
+    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Top-KI-Modelle (Claude/GPT-4)']
   },
   pro: {
-    label: 'Standard',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20',
-    price: '39,90 € / Monat',
-    features: ['Ollama (lokale KI, offline)', 'Openclaw (Desktop-Automatisierung)', '2 Agents: Behördenpost + Dokumente', 'Memory-System'],
-    missing: ['Claude & GPT-4', 'Cloud-Sync']
-  },
-  business: {
-    label: 'Business',
+    label: 'Pro',
     color: 'text-purple-400',
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/20',
-    price: '69,90 € / Monat',
-    features: ['Alles aus Standard', 'Claude (Anthropic) & GPT-4', '5 Agents: + Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync (mehrere Geräte)', 'E-Mail Support 48h'],
-    missing: ['Marketing-Agent', 'Multi-User / Team']
+    price: '59,90 € / Monat',
+    features: ['5 Agenten: + Rechtsberater, E-Mail, HR, Buchhaltung', 'Desktop-Automatisierung (Openclaw)', 'Cloud-Sync (mehrere Geräte)', 'KI läuft lokal auf deinem PC', 'E-Mail Support 48h'],
+    missing: ['Marketing-Agent', 'Top-KI-Modelle (Claude/GPT-4)', 'Multi-User / Team']
   },
-  enterprise: {
-    label: 'Enterprise',
+  business: {
+    label: 'Business',
     color: 'text-yellow-400',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
-    price: 'Auf Anfrage',
-    features: ['Alles aus Business', 'Alle 8 Agents', 'Multi-User / Team-Accounts', 'Individuelle Einrichtung', 'Priority Support (24h, Telefon)'],
+    price: '89,90 € / Monat',
+    features: ['Alle 8 Agenten inkl. Marketing', 'Claude (Anthropic) & GPT-4', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team-Accounts', 'Priority Support (24h)'],
     missing: []
   }
 }
@@ -74,7 +65,7 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   const plan = PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.free
-  const canUpgrade = user.plan === 'free' || user.plan === 'standard' || user.plan === 'pro'
+  const canUpgrade = user.plan !== 'business'
 
   const formatDate = (dateStr: string) => {
     try {
@@ -191,12 +182,18 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
           {canUpgrade && (
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
               <p className="text-white/80 text-sm font-medium mb-1">
-                {user.plan === 'free' ? 'Upgrade auf Standard – 39,90 €/Monat' : 'Upgrade auf Business – 69,90 €/Monat'}
+                {user.plan === 'free'
+                  ? 'Upgrade auf Standard – 39,90 €/Monat'
+                  : user.plan === 'standard'
+                  ? 'Upgrade auf Pro – 59,90 €/Monat'
+                  : 'Upgrade auf Business – 89,90 €/Monat'}
               </p>
               <p className="text-white/40 text-xs mb-3">
                 {user.plan === 'free'
-                  ? 'Starte jetzt mit Behördenpost & Dokumenten-Assistent. 14 Tage kostenlos testen.'
-                  : 'Erhalte Zugang zu Claude & GPT-4 sowie 5 Agents. Cloud-Sync inklusive.'}
+                  ? 'Starte mit Behördenpost & Dokumenten-Agent. 14 Tage kostenlos testen.'
+                  : user.plan === 'standard'
+                  ? 'Schalte Rechtsberater, HR, Buchhaltung & Cloud-Sync frei.'
+                  : 'Schalte alle 8 Agenten, Claude/GPT-4 & Multi-User frei.'}
               </p>
               <button
                 onClick={() => window.gerki.setup.openRegister()}
