@@ -19,7 +19,8 @@ import {
 import {
   remoteLogin,
   verifyStoredToken,
-  clearToken
+  clearToken,
+  cacheUserDirectly
 } from '../core/remoteAuth'
 import { isDevAccount, loginDevAccount } from '../core/devAccounts'
 import {
@@ -496,7 +497,10 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     // Dev-Account Bypass (Enterprise, kein Server nötig)
     if (isEmail && isDevAccount(emailOrUsername)) {
       const devUser = loginDevAccount(emailOrUsername, password)
-      if (devUser) return { success: true, user: devUser }
+      if (devUser) {
+        cacheUserDirectly(devUser)  // setzt lastVerifiedAt → getEffectivePlan bleibt 'business'
+        return { success: true, user: devUser }
+      }
       return { success: false, error: 'Falsches Dev-Passwort.' }
     }
 

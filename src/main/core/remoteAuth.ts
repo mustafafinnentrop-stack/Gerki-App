@@ -83,6 +83,9 @@ export function clearToken(): void {
 
 // ── Nutzer-Cache (für Offline-Betrieb) ─────────────────────────────────────
 
+// Öffentlich für Dev-Account-Login (setzt lastVerifiedAt damit getEffectivePlan nicht auf free fällt)
+export function cacheUserDirectly(user: RemoteUser): void { cacheUser(user) }
+
 function cacheUser(user: RemoteUser): void {
   const db = getDB()
   db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(USER_CACHE_KEY, JSON.stringify(user))
