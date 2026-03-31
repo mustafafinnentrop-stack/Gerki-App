@@ -349,8 +349,8 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
   const downloadAndPull = async () => {
     setPulling(true)
     setPullProgress('Startet Download...')
-    await window.gerki.ollama.pullModel('mistral:7b')
-    await window.gerki.ollama.setModel('mistral:7b')
+    await window.gerki.ollama.pullModel('llama3.2:3b')
+    await window.gerki.ollama.setModel('llama3.2:3b')
     setPulling(false)
     setDone(true)
     setTimeout(onNext, 1000)
@@ -370,10 +370,10 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
       <div className="mb-6 p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20">
         <p className="text-xs text-white/50 mb-2 font-medium text-purple-300">Was du bekommst:</p>
         <ul className="space-y-1 text-xs text-white/50">
-          <li>✓ Mistral 7B – schnell, gut auf Deutsch, Apache 2.0 Lizenz</li>
+          <li>✓ Llama 3.2 (3B) – schnell, kompakt, läuft auf jedem PC</li>
           <li>✓ Läuft offline – keine Internetverbindung nötig</li>
           <li>✓ Daten bleiben 100% auf deinem PC</li>
-          <li>✓ Einmaliger Download ~4GB</li>
+          <li>✓ Einmaliger Download ~2GB</li>
         </ul>
       </div>
 
@@ -423,7 +423,7 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
           disabled={pulling}
           className="w-full py-3 rounded-2xl bg-purple-500 hover:bg-purple-600 disabled:bg-purple-500/30 text-white font-semibold text-sm transition-colors mb-3"
         >
-          {pulling ? pullProgress || 'Lädt Mistral 7B herunter...' : 'Mistral 7B herunterladen (4GB)'}
+          {pulling ? pullProgress || 'Lädt Llama 3.2 herunter...' : 'Llama 3.2 (3B) herunterladen – Empfohlen (2GB)'}
         </button>
       ) : (
         <button onClick={checkOllama} disabled={checking} className="w-full py-3 rounded-2xl bg-surface border border-white/10 text-white/60 text-sm mb-3">

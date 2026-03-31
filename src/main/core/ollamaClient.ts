@@ -82,38 +82,54 @@ function buildEnvWithOllamaPath(): NodeJS.ProcessEnv {
 
 export const OLLAMA_BASE_URL = 'http://127.0.0.1:11434'
 
-// Standard-Modell für Gerki: Mistral 7B (Apache 2.0, 4GB, läuft auf 8GB RAM)
-export const DEFAULT_OLLAMA_MODEL = 'mistral:7b'
+// Standard-Modell: llama3.2:3b – schnell, kompakt, gut auf Deutsch, 2GB RAM
+export const DEFAULT_OLLAMA_MODEL = 'llama3.2:3b'
 
 export const AVAILABLE_MODELS = [
   {
+    id: 'llama3.2:3b',
+    name: 'Llama 3.2 (3B) – Empfohlen',
+    description: 'Schnell & kompakt – ideal für ältere PCs und Laptops. 2 GB RAM.',
+    size: '2.0 GB',
+    minRam: '4 GB',
+    license: 'Meta Community',
+  },
+  {
     id: 'mistral:7b',
     name: 'Mistral 7B',
-    description: 'Empfohlen – schnell, gut auf Deutsch, 4GB RAM',
+    description: 'Bessere Qualität, gut auf Deutsch. Braucht 8 GB RAM.',
     size: '4.1 GB',
     minRam: '8 GB',
     license: 'Apache 2.0',
   },
   {
+    id: 'qwen2.5:7b',
+    name: 'Qwen 2.5 (7B)',
+    description: 'Sehr gut auf Deutsch & Dokumente. 8 GB RAM.',
+    size: '4.7 GB',
+    minRam: '8 GB',
+    license: 'Apache 2.0',
+  },
+  {
     id: 'qwen2.5:14b',
-    name: 'Qwen 2.5 14B',
-    description: 'Besser für Dokumente & Deutsch, 8GB RAM',
+    name: 'Qwen 2.5 (14B)',
+    description: 'Top-Qualität auf Deutsch, für starke PCs. 16 GB RAM.',
     size: '8.7 GB',
     minRam: '16 GB',
     license: 'Apache 2.0',
   },
   {
     id: 'phi4:14b',
-    name: 'Phi-4 14B',
-    description: 'Stark bei komplexen Aufgaben, Microsoft, MIT',
+    name: 'Phi-4 (14B)',
+    description: 'Stark bei komplexen Aufgaben, Microsoft. 16 GB RAM.',
     size: '8.9 GB',
     minRam: '16 GB',
     license: 'MIT',
   },
   {
     id: 'llama3.3:70b',
-    name: 'Llama 3.3 70B',
-    description: 'Beste Qualität, nahezu GPT-4 Niveau, braucht starken PC',
+    name: 'Llama 3.3 (70B)',
+    description: 'Beste Qualität, nahezu GPT-4 Niveau. Braucht starken PC mit 32 GB RAM.',
     size: '43 GB',
     minRam: '32 GB',
     license: 'Meta Community',
