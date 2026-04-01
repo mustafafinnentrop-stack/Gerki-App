@@ -38,19 +38,11 @@ const ALLOWED_MODELS: Record<Plan, string[]> = {
   expired:  []
 }
 
-<<<<<<< HEAD
 // Cloud-Sync nur ab Pro
 export const CLOUD_SYNC_PLANS: Plan[] = ['pro', 'business']
 
 const PLAN_NAMES: Record<Plan, string> = {
-  trial:    'Testphase',
-=======
-// Cloud-Sync ab Pro
-export const CLOUD_SYNC_PLANS: Plan[] = ['pro', 'business']
-
-const PLAN_NAMES: Record<Plan, string> = {
   trial:    '14-Tage Testphase',
->>>>>>> origin/main
   standard: 'Standard',
   pro:      'Pro',
   business: 'Business',
@@ -58,19 +50,11 @@ const PLAN_NAMES: Record<Plan, string> = {
 }
 
 const UPGRADE_HINTS: Record<Plan, string> = {
-<<<<<<< HEAD
-  trial:    'Wähle einen Plan ab 39,90 €/Mo unter gerki.app/preise.',
+  trial:    'Wähle einen Plan um nach der Testphase weiterzumachen.',
   standard: 'Upgrade auf Pro (59,90 €/Mo) für mehr Agenten.',
   pro:      'Upgrade auf Business (89,90 €/Mo) für Claude & GPT-4.',
   business: '',
-  expired:  'Dein Zugang ist abgelaufen. Wähle einen Plan unter gerki.app/preise.'
-=======
-  trial:    'Wähle einen Plan um nach der Testphase weiterzumachen.',
-  standard: 'Upgrade auf Pro (59,90 €/Mo) um diesen Assistenten zu nutzen.',
-  pro:      'Upgrade auf Business (89,90 €/Mo) um diesen Assistenten zu nutzen.',
-  business: '',
   expired:  'Deine Testphase ist abgelaufen. Wähle einen Plan auf gerki.app um weiterzumachen.'
->>>>>>> origin/main
 }
 
 // Max. Offline-Tage bevor Plan auf expired zurückfällt
@@ -145,53 +129,24 @@ export function checkAccess(
  * - Trial > 14 Tage → 'expired'
  * - Legacy-Mapping: 'free' → 'trial', 'enterprise' → 'business'
  */
-<<<<<<< HEAD
 export function getEffectivePlan(plan: string, lastVerifiedAt: number, trialStartedAt?: number): Plan {
-  // Legacy-Mapping
-  if (plan === 'free') plan = 'trial'
-  if (plan === 'enterprise') plan = 'business'
-=======
-/**
- * Prüft ob Trial abgelaufen ist.
- * trialStartedAt = Timestamp der ersten Registrierung.
- */
-export function isTrialExpired(trialStartedAt: number): boolean {
-  const daysSinceStart = (Date.now() - trialStartedAt) / (1000 * 60 * 60 * 24)
-  return daysSinceStart > TRIAL_DAYS
-}
-
-/**
- * Offline-Check + Trial-Check: Gibt effektiven Plan zurück.
- * - Offline > 7 Tage → 'expired'
- * - Trial > 14 Tage → 'expired'
- * - Legacy-Mapping: 'enterprise' → 'business', 'free' → 'trial'
- */
-export function getEffectivePlan(plan: string, lastVerifiedAt: number, trialStartedAt?: number): Plan {
+  // Offline zu lange → expired
   const daysSinceVerify = (Date.now() - lastVerifiedAt) / (1000 * 60 * 60 * 24)
   if (daysSinceVerify > MAX_OFFLINE_DAYS) return 'expired'
 
-  // Legacy-Mappings
+  // Legacy-Mapping
   if (plan === 'enterprise') return 'business'
   if (plan === 'free') plan = 'trial'
->>>>>>> origin/main
 
   // Trial-Ablauf prüfen
   if (plan === 'trial' && trialStartedAt && isTrialExpired(trialStartedAt)) {
     return 'expired'
   }
 
-<<<<<<< HEAD
-  // Offline zu lange → expired
-  const daysSinceVerify = (Date.now() - lastVerifiedAt) / (1000 * 60 * 60 * 24)
-  if (daysSinceVerify > MAX_OFFLINE_DAYS) return 'expired'
-
-=======
->>>>>>> origin/main
   return (plan as Plan) in ALLOWED_SKILLS ? (plan as Plan) : 'expired'
 }
 
 /**
-<<<<<<< HEAD
  * Offline-Warnung: Gibt Tage bis Ablauf zurück (null = kein Problem)
  * Zeigt Warnung wenn < OFFLINE_WARNING_DAYS verbleiben.
  */
@@ -203,11 +158,4 @@ export function getOfflineWarning(lastVerifiedAt: number): { daysRemaining: numb
   if (daysRemaining <= 0) return { daysRemaining: 0, warn: true }
 
   return { daysRemaining, warn: true }
-=======
- * Berechnet verbleibende Trial-Tage.
- */
-export function getTrialDaysRemaining(trialStartedAt: number): number {
-  const daysSinceStart = (Date.now() - trialStartedAt) / (1000 * 60 * 60 * 24)
-  return Math.max(0, Math.ceil(TRIAL_DAYS - daysSinceStart))
->>>>>>> origin/main
 }
