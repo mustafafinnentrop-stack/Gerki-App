@@ -36,6 +36,7 @@ export default function App(): React.JSX.Element {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [activeSkill, setActiveSkill] = useState<string | null>(null)
+  const [offlineWarning, setOfflineWarning] = useState<{ daysRemaining: number } | null>(null)
 
   // App-Start: Auth prüfen
   useEffect(() => {
@@ -49,6 +50,12 @@ export default function App(): React.JSX.Element {
       // Setup-Status prüfen
       const { complete } = await window.gerki.setup.isComplete()
       setAppState(complete ? 'app' : 'setup')
+
+      // Offline-Warnung prüfen
+      try {
+        const warning = await window.gerki.plan.offlineWarning()
+        if (warning?.warn) setOfflineWarning(warning)
+      } catch { /* ignore */ }
     })
   }, [])
 
@@ -147,14 +154,25 @@ export default function App(): React.JSX.Element {
         user={user}
       />
 
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden flex flex-col">
+        {offlineWarning && (
+          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-sm text-yellow-400 flex items-center justify-between">
+            <span>
+              {offlineWarning.daysRemaining > 0
+                ? `Offline-Modus: Noch ${offlineWarning.daysRemaining} Tag${offlineWarning.daysRemaining === 1 ? '' : 'e'} bis dein Zugang pausiert wird. Bitte verbinde dich mit dem Internet.`
+                : 'Dein Zugang wurde pausiert. Bitte verbinde dich mit dem Internet um fortzufahren.'}
+            </span>
+            <button onClick={() => setOfflineWarning(null)} className="text-yellow-400/60 hover:text-yellow-400 ml-4">×</button>
+          </div>
+        )}
+        <div className="flex-1 overflow-hidden">
         {page === 'chat' && (
           <ChatPage
             conversationId={activeConversationId}
             forceSkill={activeSkill ?? undefined}
             onConversationCreated={handleConversationCreated}
             onConversationsChanged={loadConversations}
-            userPlan={(user?.plan ?? 'free') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'}
+            userPlan={(user?.plan ?? 'trial') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'}
           />
         )}
         {page === 'agents' && (
@@ -164,13 +182,14 @@ export default function App(): React.JSX.Element {
             onSelectConversation={handleSelectAgentConversation}
           />
         )}
+        {page === 'skills' && <SkillsPage />}
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
-        {page === 'skills' && <SkillsPage />}
         {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'trial') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'} />}
         {page === 'account' && user && (
           <AccountPage user={user} onLogout={handleLogout} />
         )}
+        </div>
       </main>
     </div>
   )

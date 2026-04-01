@@ -88,9 +88,14 @@ const gerki = {
     logout: () => ipcRenderer.invoke('auth:logout'),
     changePassword: (userId: string, oldPassword: string, newPassword: string) =>
       ipcRenderer.invoke('auth:change-password', userId, oldPassword, newPassword),
-    setPlan: (userId: string, plan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise') =>
+    setPlan: (userId: string, plan: 'trial' | 'standard' | 'pro' | 'business' | 'expired') =>
       ipcRenderer.invoke('auth:set-plan', userId, plan),
     deleteAccount: (userId: string) => ipcRenderer.invoke('auth:delete-account', userId)
+  },
+
+  // ── Plan Enforcement ──────────────────────────────────────────────
+  plan: {
+    offlineWarning: () => ipcRenderer.invoke('plan:offline-warning')
   },
 
   // ── Chat File Upload ───────────────────────────────────────────────

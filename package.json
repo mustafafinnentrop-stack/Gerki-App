@@ -52,6 +52,13 @@
   "build": {
     "appId": "de.gerki.app",
     "productName": "Gerki",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mustafafinnentrop-stack",
+        "repo": "Gerki-App"
+      }
+    ],
     "directories": { "output": "dist" },
     "files": ["out/**/*"],
     "extraResources": [],

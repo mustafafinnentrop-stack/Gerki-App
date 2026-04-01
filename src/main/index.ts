@@ -3,8 +3,9 @@
  * Erstellt das App-Fenster, registriert IPC-Handler, verwaltet den App-Lifecycle.
  */
 
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, dialog } from 'electron'
 import { join } from 'path'
+import { autoUpdater } from 'electron-updater'
 import { optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc/handlers'
 import { restoreWatchers } from './core/fileIndexer'
@@ -66,6 +67,49 @@ function createWindow(): void {
   registerIpcHandlers(mainWindow)
 }
 
+// ── Auto-Updater ──────────────────────────────────────────────────────────
+function setupAutoUpdater(): void {
+  if (is.dev) return  // Kein Auto-Update im Dev-Modus
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', (info) => {
+    mainWindow?.webContents.send('app:update-available', {
+      version: info.version,
+      releaseNotes: info.releaseNotes
+    })
+  })
+
+  autoUpdater.on('download-progress', (progress) => {
+    mainWindow?.webContents.send('app:update-progress', {
+      percent: Math.round(progress.percent)
+    })
+  })
+
+  autoUpdater.on('update-downloaded', (info) => {
+    mainWindow?.webContents.send('app:update-downloaded', { version: info.version })
+    dialog.showMessageBox(mainWindow!, {
+      type: 'info',
+      title: 'Gerki Update',
+      message: `Version ${info.version} wurde heruntergeladen.`,
+      detail: 'Das Update wird beim nächsten Neustart installiert. Jetzt neu starten?',
+      buttons: ['Später', 'Jetzt neu starten'],
+      defaultId: 1
+    }).then(({ response }) => {
+      if (response === 1) autoUpdater.quitAndInstall()
+    })
+  })
+
+  autoUpdater.on('error', (err) => {
+    mainWindow?.webContents.send('app:update-error', { error: err.message })
+  })
+
+  // Alle 4 Stunden nach Updates suchen
+  autoUpdater.checkForUpdates()
+  setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000)
+}
+
 // App bereit
 app.whenReady().then(() => {
   // DB initialisieren (Schema + Seeds)
@@ -83,6 +127,9 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  // Auto-Updater starten (sucht nach Updates auf GitHub Releases)
+  setupAutoUpdater()
 
   // macOS: Deep-Link kommt über open-url Event
   app.on('open-url', (_event, url) => {

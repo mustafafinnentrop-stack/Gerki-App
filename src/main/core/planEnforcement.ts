@@ -1,19 +1,18 @@
 /**
  * Plan-Enforcement für Gerki
  *
- * Pläne (JWT `plan`-Wert):
- *   trial    – 14-Tage Testphase → Standard-Features zum Testen
- *   standard – 39,90 €/Mo → 2 Agents (Behördenpost + Dokumente), Ollama
- *   pro      – 59,90 €/Mo → 5 Agents + Cloud-Sync, Ollama
- *   business – 89,90 €/Mo → alle 8 Agents, Cloud-KI (Claude/GPT-4), Multi-User, Cloud-Sync
- *
- * Kein dauerhaft kostenloser Plan! Nur 14-Tage Trial, danach Abo erforderlich.
+ * Pläne:
+ *   trial      – 14-Tage Testphase (nach Registrierung)
+ *   standard   – 39,90 €/Mo → Ollama, 2 Agenten (Behördenpost + Dokumente)
+ *   pro        – 59,90 €/Mo → Ollama, 5 Agenten + Cloud-Sync
+ *   business   – 89,90 €/Mo → Alle Modelle (Claude, GPT-4), alle 8 Agenten + Cloud-Sync
+ *   expired    – Trial abgelaufen oder Abo gekündigt → alles gesperrt
  *
  * Anti-Cheat:
- *   - Plan kommt ausschließlich aus serverside-signiertem JWT (gerki.app)
+ *   - Plan kommt aus serverside-signiertem JWT (gerki.app)
  *   - JWT läuft täglich ab, App muss online refreshen
- *   - Offline max. 7 Tage (danach plan = 'expired' bis nächster Verify)
- *   - 1 Trial pro E-Mail (Domain-Blacklist auf Server)
+ *   - Offline max. 7 Tage (danach plan → 'expired' bis nächster Verify)
+ *   - 1 Trial pro E-Mail (Server-seitig)
  *   - Gerät-Fingerprint serverside gespeichert
  */
 
@@ -39,11 +38,19 @@ const ALLOWED_MODELS: Record<Plan, string[]> = {
   expired:  []
 }
 
+<<<<<<< HEAD
+// Cloud-Sync nur ab Pro
+export const CLOUD_SYNC_PLANS: Plan[] = ['pro', 'business']
+
+const PLAN_NAMES: Record<Plan, string> = {
+  trial:    'Testphase',
+=======
 // Cloud-Sync ab Pro
 export const CLOUD_SYNC_PLANS: Plan[] = ['pro', 'business']
 
 const PLAN_NAMES: Record<Plan, string> = {
   trial:    '14-Tage Testphase',
+>>>>>>> origin/main
   standard: 'Standard',
   pro:      'Pro',
   business: 'Business',
@@ -51,23 +58,44 @@ const PLAN_NAMES: Record<Plan, string> = {
 }
 
 const UPGRADE_HINTS: Record<Plan, string> = {
+<<<<<<< HEAD
+  trial:    'Wähle einen Plan ab 39,90 €/Mo unter gerki.app/preise.',
+  standard: 'Upgrade auf Pro (59,90 €/Mo) für mehr Agenten.',
+  pro:      'Upgrade auf Business (89,90 €/Mo) für Claude & GPT-4.',
+  business: '',
+  expired:  'Dein Zugang ist abgelaufen. Wähle einen Plan unter gerki.app/preise.'
+=======
   trial:    'Wähle einen Plan um nach der Testphase weiterzumachen.',
   standard: 'Upgrade auf Pro (59,90 €/Mo) um diesen Assistenten zu nutzen.',
   pro:      'Upgrade auf Business (89,90 €/Mo) um diesen Assistenten zu nutzen.',
   business: '',
   expired:  'Deine Testphase ist abgelaufen. Wähle einen Plan auf gerki.app um weiterzumachen.'
+>>>>>>> origin/main
 }
 
 // Max. Offline-Tage bevor Plan auf expired zurückfällt
 export const MAX_OFFLINE_DAYS = 7
 
+// Ab wann Warnung anzeigen (Tage vor Ablauf)
+export const OFFLINE_WARNING_DAYS = 5
+
+export function isTrialExpired(trialStartedAt: number): boolean {
+  const daysSinceStart = (Date.now() - trialStartedAt) / (1000 * 60 * 60 * 24)
+  return daysSinceStart > TRIAL_DAYS
+}
+
+export function getTrialDaysRemaining(trialStartedAt: number): number {
+  const daysSinceStart = (Date.now() - trialStartedAt) / (1000 * 60 * 60 * 24)
+  return Math.max(0, Math.ceil(TRIAL_DAYS - daysSinceStart))
+}
+
 export function isSkillAllowed(plan: string, skillSlug: string): boolean {
-  const p = (plan as Plan) in ALLOWED_SKILLS ? (plan as Plan) : 'free'
+  const p = (plan as Plan) in ALLOWED_SKILLS ? (plan as Plan) : 'expired'
   return ALLOWED_SKILLS[p].includes(skillSlug)
 }
 
 export function isModelAllowed(plan: string, model: string): boolean {
-  const p = (plan as Plan) in ALLOWED_MODELS ? (plan as Plan) : 'free'
+  const p = (plan as Plan) in ALLOWED_MODELS ? (plan as Plan) : 'expired'
   return ALLOWED_MODELS[p].includes(model)
 }
 
@@ -88,11 +116,17 @@ export function checkAccess(
   skillSlug: string,
   model: string
 ): { allowed: boolean; error?: string } {
+  if (plan === 'expired') {
+    return {
+      allowed: false,
+      error: 'Dein Zugang ist abgelaufen. Bitte wähle einen Plan unter gerki.app/preise.'
+    }
+  }
   if (!isSkillAllowed(plan, skillSlug)) {
     const hint = getUpgradeHint(plan)
     return {
       allowed: false,
-      error: `Der Assistent "${skillSlug}" ist in deinem ${getPlanName(plan)}-Plan nicht verfügbar. ${hint}`
+      error: `Der Agent "${skillSlug}" ist in deinem ${getPlanName(plan)}-Plan nicht verfügbar. ${hint}`
     }
   }
   if (!isModelAllowed(plan, model)) {
@@ -106,9 +140,17 @@ export function checkAccess(
 }
 
 /**
- * Offline-Check: Gibt 'free' zurück wenn User zu lange offline ist.
- * lastVerifiedAt = Timestamp des letzten erfolgreichen /api/app/auth/verify
+ * Offline-Degradierung: Gibt den effektiven Plan zurück.
+ * - Offline > 7 Tage → 'expired'
+ * - Trial > 14 Tage → 'expired'
+ * - Legacy-Mapping: 'free' → 'trial', 'enterprise' → 'business'
  */
+<<<<<<< HEAD
+export function getEffectivePlan(plan: string, lastVerifiedAt: number, trialStartedAt?: number): Plan {
+  // Legacy-Mapping
+  if (plan === 'free') plan = 'trial'
+  if (plan === 'enterprise') plan = 'business'
+=======
 /**
  * Prüft ob Trial abgelaufen ist.
  * trialStartedAt = Timestamp der ersten Registrierung.
@@ -131,19 +173,41 @@ export function getEffectivePlan(plan: string, lastVerifiedAt: number, trialStar
   // Legacy-Mappings
   if (plan === 'enterprise') return 'business'
   if (plan === 'free') plan = 'trial'
+>>>>>>> origin/main
 
   // Trial-Ablauf prüfen
   if (plan === 'trial' && trialStartedAt && isTrialExpired(trialStartedAt)) {
     return 'expired'
   }
 
+<<<<<<< HEAD
+  // Offline zu lange → expired
+  const daysSinceVerify = (Date.now() - lastVerifiedAt) / (1000 * 60 * 60 * 24)
+  if (daysSinceVerify > MAX_OFFLINE_DAYS) return 'expired'
+
+=======
+>>>>>>> origin/main
   return (plan as Plan) in ALLOWED_SKILLS ? (plan as Plan) : 'expired'
 }
 
 /**
+<<<<<<< HEAD
+ * Offline-Warnung: Gibt Tage bis Ablauf zurück (null = kein Problem)
+ * Zeigt Warnung wenn < OFFLINE_WARNING_DAYS verbleiben.
+ */
+export function getOfflineWarning(lastVerifiedAt: number): { daysRemaining: number; warn: boolean } | null {
+  const daysSinceVerify = (Date.now() - lastVerifiedAt) / (1000 * 60 * 60 * 24)
+  const daysRemaining = Math.max(0, Math.ceil(MAX_OFFLINE_DAYS - daysSinceVerify))
+
+  if (daysSinceVerify <= OFFLINE_WARNING_DAYS) return null // Noch kein Problem
+  if (daysRemaining <= 0) return { daysRemaining: 0, warn: true }
+
+  return { daysRemaining, warn: true }
+=======
  * Berechnet verbleibende Trial-Tage.
  */
 export function getTrialDaysRemaining(trialStartedAt: number): number {
   const daysSinceStart = (Date.now() - trialStartedAt) / (1000 * 60 * 60 * 24)
   return Math.max(0, Math.ceil(TRIAL_DAYS - daysSinceStart))
+>>>>>>> origin/main
 }

@@ -74,10 +74,10 @@ function WelcomeStep({ onNext }: { onNext: () => void }): React.JSX.Element {
       {/* Was du bekommst */}
       <div className="grid grid-cols-1 gap-3 text-left mb-10 max-w-sm mx-auto">
         {[
-          { icon: Zap, label: 'Lokale KI – kein API-Key nötig', sub: 'Ollama läuft direkt auf deinem PC, gratis' },
-          { icon: FolderOpen, label: 'Zugriff auf deine Dateien', sub: 'Gerki findet alles auf deinem PC' },
-          { icon: Brain, label: '8 spezialisierte Skills', sub: 'Behördenpost, Recht, E-Mail & mehr' },
-          { icon: Monitor, label: 'Claude & GPT-4 optional (Business)', sub: 'Eigener API-Key erforderlich' }
+          { icon: Zap, label: 'KI-Agenten für dein Büro', sub: 'Behördenpost, Recht, Buchhaltung & mehr' },
+          { icon: FolderOpen, label: 'Zugriff auf deine Dateien', sub: 'Gerki findet & analysiert deine Dokumente' },
+          { icon: Brain, label: 'Lokale KI inklusive', sub: 'Ollama läuft auf deinem PC – kostenlos & privat' },
+          { icon: Monitor, label: 'Desktop-Automatisierung', sub: 'Openclaw steuert Formulare & Browser für dich' }
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -362,8 +362,8 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         <div className="text-5xl mb-4">⚡</div>
         <h2 className="text-2xl font-bold text-white mb-3">Lokale KI einrichten</h2>
         <p className="text-white/50 text-sm leading-relaxed">
-          Mit Ollama läuft die KI komplett lokal auf deinem PC.{' '}
-          <strong className="text-white/70">Kein API-Key, keine Kosten, 100% privat.</strong>
+          Mit Ollama läuft die KI direkt auf deinem PC.{' '}
+          <strong className="text-white/70">Kein API-Key nötig, keine laufenden Kosten.</strong>
         </p>
       </div>
 
@@ -371,8 +371,8 @@ function OllamaStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void
         <p className="text-xs text-white/50 mb-2 font-medium text-purple-300">Was du bekommst:</p>
         <ul className="space-y-1 text-xs text-white/50">
           <li>✓ Llama 3.2 (3B) – schnell, kompakt, läuft auf jedem PC</li>
-          <li>✓ Läuft offline – keine Internetverbindung nötig</li>
-          <li>✓ Daten bleiben 100% auf deinem PC</li>
+          <li>✓ Läuft offline – auch ohne Internet nutzbar</li>
+          <li>✓ Deine Daten bleiben lokal auf deinem PC</li>
           <li>✓ Einmaliger Download ~2GB</li>
         </ul>
       </div>
@@ -615,8 +615,8 @@ function DoneStep({ onComplete }: { onComplete: () => void }): React.JSX.Element
 
       <h2 className="text-2xl font-bold text-white mb-3">Gerki ist bereit! 🎉</h2>
       <p className="text-white/50 text-sm mb-8 max-w-sm mx-auto">
-        Du kannst jetzt loslegen. Gerki lernt mit jedem Gespräch mehr über dich und
-        wird immer besser deinen persönlichen Assistenten spielen.
+        Deine KI-Agenten sind einsatzbereit. Gerki lernt mit jedem Gespräch
+        dazu und wird dein Büro-Alltag immer effizienter machen.
       </p>
 
       {/* Quick Tips */}

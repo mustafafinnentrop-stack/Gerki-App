@@ -49,6 +49,8 @@ import {
   setUserPlan,
   deleteUser
 } from '../core/auth'
+import { getOfflineWarning } from '../core/planEnforcement'
+import { getLastVerifiedAt } from '../core/remoteAuth'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
@@ -538,9 +540,16 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     return changePassword(userId, oldPassword, newPassword)
   })
 
-  ipcMain.handle('auth:set-plan', (_event, userId: string, plan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise') => {
+  ipcMain.handle('auth:set-plan', (_event, userId: string, plan: 'trial' | 'standard' | 'pro' | 'business' | 'expired') => {
     setUserPlan(userId, plan)
     return { success: true }
+  })
+
+  // Offline-Degradierung Warnung: Gibt Tage bis Ablauf zurück
+  ipcMain.handle('plan:offline-warning', () => {
+    const lastVerified = getLastVerifiedAt()
+    if (!lastVerified) return null
+    return getOfflineWarning(lastVerified)
   })
 
   ipcMain.handle('auth:delete-account', (_event, userId: string) => {

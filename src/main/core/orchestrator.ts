@@ -235,8 +235,9 @@ export async function processMessage(
     .filter(Boolean)
     .join('')
 
-  // 5. Gesprächshistorie laden
-  const history = loadHistory(conversationId)
+  // 5. Gesprächshistorie laden (für lokale Modelle kürzer, spart Kontext)
+  const historyLimit = model === 'ollama' ? 8 : 20
+  const history = loadHistory(conversationId, historyLimit)
 
   // 6. Usernachricht speichern
   saveMessage(conversationId, 'user', req.userMessage, model, skillSlug)

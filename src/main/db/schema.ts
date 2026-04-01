@@ -112,10 +112,27 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   salt          TEXT NOT NULL,
-  plan          TEXT DEFAULT 'free' CHECK(plan IN ('free','pro','business')),
+  plan          TEXT DEFAULT 'trial' CHECK(plan IN ('trial','standard','pro','business','expired')),
   created_at    TEXT DEFAULT (datetime('now')),
   updated_at    TEXT DEFAULT (datetime('now'))
 );
+
+-- =====================================================
+-- USAGE TRACKING: API-Verbrauch pro Nutzer/Monat
+-- =====================================================
+CREATE TABLE IF NOT EXISTS usage_tracking (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  model         TEXT NOT NULL,        -- 'claude', 'gpt-4', 'gpt-3.5', 'ollama'
+  skill         TEXT,                 -- welcher Skill wurde genutzt
+  input_tokens  INTEGER DEFAULT 0,
+  output_tokens INTEGER DEFAULT 0,
+  cost_euro     REAL DEFAULT 0.0,     -- geschätzte Kosten in Euro
+  period        TEXT NOT NULL,        -- 'YYYY-MM' (z.B. '2026-04')
+  created_at    TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_user_period ON usage_tracking(user_id, period);
 
 -- Indexes für Performance
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);

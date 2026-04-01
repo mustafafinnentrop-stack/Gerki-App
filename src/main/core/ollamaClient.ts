@@ -277,7 +277,16 @@ export class OllamaClient {
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: true }),
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        options: {
+          num_ctx: 4096,       // Kontextfenster begrenzen (Default 2048, max variabel)
+          num_predict: 1024,   // Max Tokens für Antwort
+          temperature: 0.7
+        }
+      }),
     })
 
     if (!response.ok) throw new Error(`Chat failed: ${response.statusText}`)
