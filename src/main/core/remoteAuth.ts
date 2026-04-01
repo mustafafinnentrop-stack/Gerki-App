@@ -31,7 +31,7 @@ export interface RemoteUser {
   id: string
   email: string
   username: string
-  plan: 'free' | 'standard' | 'pro' | 'business' | 'enterprise'
+  plan: 'trial' | 'standard' | 'pro' | 'business' | 'expired'
   created_at: string
 }
 
@@ -82,6 +82,9 @@ export function clearToken(): void {
 }
 
 // ── Nutzer-Cache (für Offline-Betrieb) ─────────────────────────────────────
+
+// Öffentlich für Dev-Account-Login (setzt lastVerifiedAt damit getEffectivePlan nicht auf free fällt)
+export function cacheUserDirectly(user: RemoteUser): void { cacheUser(user) }
 
 function cacheUser(user: RemoteUser): void {
   const db = getDB()
