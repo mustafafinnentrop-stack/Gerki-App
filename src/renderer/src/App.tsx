@@ -6,11 +6,12 @@ import MemoryPage from './pages/Memory'
 import FilesPage from './pages/Files'
 import SettingsPage from './pages/Settings'
 import AccountPage from './pages/Account'
+import SkillsPage from './pages/Skills'
 import SetupWizard from './pages/Setup'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-type Page = 'chat' | 'agents' | 'memory' | 'files' | 'settings' | 'account'
+type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'settings' | 'account'
 type AppState = 'loading' | 'login' | 'register' | 'setup' | 'app'
 
 interface UserInfo {
@@ -153,7 +154,7 @@ export default function App(): React.JSX.Element {
             forceSkill={activeSkill ?? undefined}
             onConversationCreated={handleConversationCreated}
             onConversationsChanged={loadConversations}
-            userPlan={(user?.plan ?? 'free') as 'free' | 'standard' | 'pro' | 'business'}
+            userPlan={(user?.plan ?? 'free') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'}
           />
         )}
         {page === 'agents' && (
@@ -165,7 +166,8 @@ export default function App(): React.JSX.Element {
         )}
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
-        {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'free') as 'free' | 'standard' | 'pro' | 'business'} />}
+        {page === 'skills' && <SkillsPage />}
+        {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'trial') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'} />}
         {page === 'account' && user && (
           <AccountPage user={user} onLogout={handleLogout} />
         )}

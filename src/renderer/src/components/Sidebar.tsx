@@ -5,6 +5,7 @@ import {
   Brain,
   Settings,
   FolderOpen,
+  Puzzle,
   Plus,
   Bot,
   User,
@@ -38,6 +39,7 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
   { id: 'agents', icon: AgentIcon, label: 'Agenten' },
+  { id: 'skills', icon: Puzzle, label: 'Skills' },
   { id: 'memory', icon: Brain, label: 'Memory' },
   { id: 'files', icon: FolderOpen, label: 'Dateien' },
   { id: 'settings', icon: Settings, label: 'Einstellungen' }
@@ -179,8 +181,12 @@ export default function Sidebar({
             </div>
             {isPro ? (
               <Crown size={14} className="text-yellow-400 flex-shrink-0" />
+            ) : user.plan === 'trial' || user.plan === 'free' ? (
+              <span className="text-xs text-green-400/60 flex-shrink-0">Trial</span>
+            ) : user.plan === 'expired' ? (
+              <span className="text-xs text-red-400 flex-shrink-0">Abgelaufen</span>
             ) : (
-              <span className="text-xs text-white/25 flex-shrink-0">Free</span>
+              <span className="text-xs text-blue-400/60 flex-shrink-0">{user.plan === 'standard' ? 'Std' : 'Pro'}</span>
             )}
           </button>
         </div>

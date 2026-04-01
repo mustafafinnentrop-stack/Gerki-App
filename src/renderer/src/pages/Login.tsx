@@ -63,7 +63,7 @@ export default function Login({ onLogin }: LoginProps): React.JSX.Element {
             <Bot size={28} className="text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-white">Willkommen bei Gerki</h1>
-          <p className="text-white/40 text-sm mt-1">Deine persönliche KI – lokal & privat</p>
+          <p className="text-white/40 text-sm mt-1">Spezialisierte KI-Agenten für dein Büro</p>
         </div>
 
         {/* Google Login */}
@@ -158,7 +158,7 @@ export default function Login({ onLogin }: LoginProps): React.JSX.Element {
         </p>
 
         <p className="text-center text-xs text-white/20 mt-4">
-          Gespräche & Dateien bleiben lokal auf deinem PC.
+          14 Tage kostenlos testen. Keine Kreditkarte nötig.
         </p>
       </div>
     </div>

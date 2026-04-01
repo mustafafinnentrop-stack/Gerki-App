@@ -172,10 +172,10 @@ declare global {
           error?: string
           source?: 'remote' | 'cache' | 'local'
         }>
-        currentUser: () => Promise<{ id: string; username: string; email: string; plan: 'free' | 'standard' | 'pro' | 'business'; created_at: string } | null>
+        currentUser: () => Promise<{ id: string; username: string; email: string; plan: 'trial' | 'standard' | 'pro' | 'business' | 'expired'; created_at: string } | null>
         logout: () => Promise<{ success: boolean }>
         changePassword: (userId: string, oldPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>
-        setPlan: (userId: string, plan: 'free' | 'standard' | 'pro' | 'business') => Promise<{ success: boolean }>
+        setPlan: (userId: string, plan: 'trial' | 'standard' | 'pro' | 'business' | 'expired') => Promise<{ success: boolean }>
         deleteAccount: (userId: string) => Promise<{ success: boolean }>
       }
 

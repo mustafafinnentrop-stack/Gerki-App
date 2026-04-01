@@ -53,13 +53,13 @@ export default function Register({ onRegister, onGoToLogin }: RegisterProps): Re
             <Bot size={28} className="text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-white">Konto erstellen</h1>
-          <p className="text-white/40 text-sm mt-1">Starte kostenlos mit lokaler KI</p>
+          <p className="text-white/40 text-sm mt-1">14 Tage kostenlos testen — alle Basis-Funktionen inklusive</p>
         </div>
 
-        {/* Free plan badge */}
+        {/* Trial badge */}
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-6 text-center">
-          <span className="text-green-400 text-sm font-medium">✓ Kostenloser Start</span>
-          <p className="text-white/40 text-xs mt-0.5">Ollama läuft lokal – kein API-Key nötig</p>
+          <span className="text-green-400 text-sm font-medium">14 Tage Testphase</span>
+          <p className="text-white/40 text-xs mt-0.5">Keine Kreditkarte nötig. Behördenpost & Dokumente inklusive.</p>
         </div>
 
         {/* Form */}
@@ -97,7 +97,7 @@ export default function Register({ onRegister, onGoToLogin }: RegisterProps): Re
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mindestens 6 Zeichen"
+                placeholder="Mindestens 8 Zeichen"
                 autoComplete="new-password"
                 className="w-full bg-surface border border-white/10 rounded-xl px-4 py-3 pr-12 text-white text-sm
                            placeholder:text-white/25 outline-none focus:border-primary/50 transition-colors"
@@ -160,7 +160,7 @@ export default function Register({ onRegister, onGoToLogin }: RegisterProps): Re
         </div>
 
         <p className="text-center text-xs text-white/20 mt-4">
-          Alle Daten bleiben lokal auf deinem Gerät gespeichert.
+          14 Tage alle Basis-Funktionen testen. Danach Plan wählen.
         </p>
       </div>
     </div>

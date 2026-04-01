@@ -38,7 +38,7 @@ import {
 } from '../db/memory'
 import { getAllSkills } from '../core/skills'
 import { getDB } from '../db/database'
-import { getOpenclawClient, resetOpenclawClient } from '../core/openclawClient'
+import { getOpenclawClient, resetOpenclawClient, DEFAULT_OPENCLAW_URL } from '../core/openclawClient'
 import { getOllamaClient, AVAILABLE_MODELS } from '../core/ollamaClient'
 import {
   registerUser,
@@ -223,19 +223,19 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('openclaw:status', async () => {
     try {
-      const url = getSettings().openclaw_url ?? 'http://127.0.0.1:8765'
+      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
       const oc = getOpenclawClient(url)
       const connected = await oc.isConnected()
       const version = connected ? await oc.getVersion() : null
       return { connected, url, version }
     } catch {
-      return { connected: false, url: 'http://127.0.0.1:8765', version: null }
+      return { connected: false, url: DEFAULT_OPENCLAW_URL, version: null }
     }
   })
 
   ipcMain.handle('openclaw:action', async (_event, action: Record<string, unknown>) => {
     try {
-      const url = getSettings().openclaw_url ?? 'http://127.0.0.1:8765'
+      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
       const res = await fetch(`${url}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +250,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('openclaw:screenshot', async () => {
     try {
-      const url = getSettings().openclaw_url ?? 'http://127.0.0.1:8765'
+      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
       const oc = getOpenclawClient(url)
       return await oc.screenshot()
     } catch (error) {
@@ -299,7 +299,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 2000))
         try {
-          const res = await fetch('http://127.0.0.1:8765/status', { signal: AbortSignal.timeout(2000) })
+          const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
           if (res.ok) {
             mainWindow.webContents.send('openclaw:install-progress', { status: 'Openclaw bereit!', percent: 100 })
             return { success: true }
@@ -327,7 +327,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       for (let i = 0; i < 10; i++) {
         await new Promise(r => setTimeout(r, 2000))
         try {
-          const res = await fetch('http://127.0.0.1:8765/status', { signal: AbortSignal.timeout(2000) })
+          const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
           if (res.ok) return { success: true }
         } catch { /* noch nicht bereit */ }
       }

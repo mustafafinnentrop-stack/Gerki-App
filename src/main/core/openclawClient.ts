@@ -47,11 +47,14 @@ export interface FindElementResult {
   error?: string
 }
 
+/** Standard-URL für Openclaw — einzige Stelle wo die URL definiert ist */
+export const DEFAULT_OPENCLAW_URL = 'http://127.0.0.1:8765'
+
 export class OpenclawClient {
   private baseUrl: string
   private timeout: number
 
-  constructor(url = 'http://127.0.0.1:8765', timeout = 15000) {
+  constructor(url = DEFAULT_OPENCLAW_URL, timeout = 15000) {
     this.baseUrl = url.replace(/\/$/, '')
     this.timeout = timeout
   }
@@ -164,7 +167,7 @@ let _client: OpenclawClient | null = null
 
 export function getOpenclawClient(url?: string): OpenclawClient {
   if (url || !_client) {
-    _client = new OpenclawClient(url ?? 'http://127.0.0.1:8765')
+    _client = new OpenclawClient(url ?? DEFAULT_OPENCLAW_URL)
   }
   return _client
 }

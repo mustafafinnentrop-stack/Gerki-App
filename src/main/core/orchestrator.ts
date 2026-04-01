@@ -16,7 +16,7 @@ import { getDB } from '../db/database'
 import { buildMemoryContext, rememberFacts } from '../db/memory'
 import { detectSkill, getSkill } from './skills'
 import { searchFiles, getIndexStats } from './fileIndexer'
-import { getOpenclawClient } from './openclawClient'
+import { getOpenclawClient, DEFAULT_OPENCLAW_URL } from './openclawClient'
 import { runAgenticLoop } from './agenticLoop'
 import type { AgentStep } from './agenticLoop'
 import { getOllamaClient, DEFAULT_OLLAMA_MODEL } from './ollamaClient'
@@ -253,7 +253,7 @@ export async function processMessage(
     const apiKey = getSetting('claude_api_key')
     if (!apiKey) throw new Error('Claude API-Schlüssel nicht konfiguriert.')
 
-    const openclawUrl = getSetting('openclaw_url') ?? 'http://127.0.0.1:8765'
+    const openclawUrl = getSetting('openclaw_url') ?? DEFAULT_OPENCLAW_URL
     const isConnected = await getOpenclawClient(openclawUrl).isConnected()
 
     if (isConnected) {
@@ -332,7 +332,7 @@ export async function processMessage(
     ]
 
     const stream = await client.messages.stream({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       system: systemPrompt,
       messages

@@ -44,7 +44,7 @@ interface ChatPageProps {
   forceSkill?: string
   onConversationCreated: (id: string) => void
   onConversationsChanged: () => void
-  userPlan: 'free' | 'standard' | 'pro' | 'business'
+  userPlan: 'trial' | 'standard' | 'pro' | 'business' | 'expired'
 }
 
 const SKILL_LABELS: Record<string, string> = {

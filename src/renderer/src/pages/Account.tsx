@@ -15,14 +15,14 @@ interface AccountPageProps {
 }
 
 const PLAN_CONFIG = {
-  free: {
-    label: 'Testversion',
-    color: 'text-white/60',
-    bg: 'bg-white/10',
-    border: 'border-white/10',
-    price: null,
-    features: ['Allgemeiner Assistent', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Behördenpost & Dokumente-Agent', 'Rechtsberater, HR, Buchhaltung', 'Cloud-Sync']
+  trial: {
+    label: '14-Tage Testphase',
+    color: 'text-green-400',
+    bg: 'bg-green-500/10',
+    border: 'border-green-500/20',
+    price: 'Kostenlos',
+    features: ['2 Agenten: Behördenpost + Dokumente', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
+    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Cloud-KI (Claude/GPT-4)']
   },
   standard: {
     label: 'Standard',
@@ -31,7 +31,7 @@ const PLAN_CONFIG = {
     border: 'border-blue-500/20',
     price: '39,90 € / Monat',
     features: ['2 Agenten: Behördenpost + Dokumente', 'Desktop-Automatisierung (Openclaw)', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Top-KI-Modelle (Claude/GPT-4)']
+    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Cloud-KI (Claude/GPT-4)']
   },
   pro: {
     label: 'Pro',
@@ -40,7 +40,7 @@ const PLAN_CONFIG = {
     border: 'border-purple-500/20',
     price: '59,90 € / Monat',
     features: ['5 Agenten: + Rechtsberater, E-Mail, HR, Buchhaltung', 'Desktop-Automatisierung (Openclaw)', 'Cloud-Sync (mehrere Geräte)', 'KI läuft lokal auf deinem PC', 'E-Mail Support 48h'],
-    missing: ['Marketing-Agent', 'Top-KI-Modelle (Claude/GPT-4)', 'Multi-User / Team']
+    missing: ['Marketing-Agent', 'Cloud-KI (Claude/GPT-4)', 'Multi-User / Team']
   },
   business: {
     label: 'Business',
@@ -48,8 +48,17 @@ const PLAN_CONFIG = {
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
     price: '89,90 € / Monat',
-    features: ['Alle 8 Agenten inkl. Marketing', 'Claude (Anthropic) & GPT-4', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team-Accounts', 'Priority Support (24h)'],
+    features: ['Alle 8 Agenten inkl. Marketing', 'Claude & GPT-4 (Cloud-KI)', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team-Accounts', 'Priority Support (24h)'],
     missing: []
+  },
+  expired: {
+    label: 'Abgelaufen',
+    color: 'text-red-400',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500/20',
+    price: null,
+    features: [],
+    missing: ['Alle Funktionen gesperrt — wähle einen Plan um weiterzumachen']
   }
 }
 
@@ -64,7 +73,8 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const plan = PLAN_CONFIG[user.plan as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.free
+  const planKey = user.plan === 'free' ? 'trial' : user.plan
+  const plan = PLAN_CONFIG[planKey as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.expired
   const canUpgrade = user.plan !== 'business'
 
   const formatDate = (dateStr: string) => {
@@ -182,15 +192,15 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
           {canUpgrade && (
             <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
               <p className="text-white/80 text-sm font-medium mb-1">
-                {user.plan === 'free'
-                  ? 'Upgrade auf Standard – 39,90 €/Monat'
+                {user.plan === 'trial' || user.plan === 'free' || user.plan === 'expired'
+                  ? 'Plan wählen – ab 39,90 €/Monat'
                   : user.plan === 'standard'
                   ? 'Upgrade auf Pro – 59,90 €/Monat'
                   : 'Upgrade auf Business – 89,90 €/Monat'}
               </p>
               <p className="text-white/40 text-xs mb-3">
-                {user.plan === 'free'
-                  ? 'Starte mit Behördenpost & Dokumenten-Agent. 14 Tage kostenlos testen.'
+                {user.plan === 'trial' || user.plan === 'free' || user.plan === 'expired'
+                  ? 'Wähle Standard, Pro oder Business um alle Funktionen dauerhaft zu nutzen.'
                   : user.plan === 'standard'
                   ? 'Schalte Rechtsberater, HR, Buchhaltung & Cloud-Sync frei.'
                   : 'Schalte alle 8 Agenten, Claude/GPT-4 & Multi-User frei.'}

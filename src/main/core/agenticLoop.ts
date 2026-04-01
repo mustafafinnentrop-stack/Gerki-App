@@ -14,7 +14,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { getOpenclawClient } from './openclawClient'
+import { getOpenclawClient, DEFAULT_OPENCLAW_URL } from './openclawClient'
 import { searchFiles } from './fileIndexer'
 
 // ── Typen ──────────────────────────────────────────────────────────────
@@ -282,7 +282,7 @@ export async function runAgenticLoop(params: AgentLoopParams): Promise<string> {
     systemPrompt,
     messages,
     apiKey,
-    openclawUrl = 'http://127.0.0.1:8765',
+    openclawUrl = DEFAULT_OPENCLAW_URL,
     maxIterations = 20,
     onToken,
     onStep
