@@ -34,6 +34,8 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
   const [openaiKey, setOpenaiKey] = useState('')
   const [openclawUrl, setOpenclawUrl] = useState('http://127.0.0.1:8765')
   const [openclawStatus, setOpenclawStatus] = useState<OpenclawStatus | null>(null)
+  const [savingOpenclawUrl, setSavingOpenclawUrl] = useState(false)
+  const [openclawUrlSaved, setOpenclawUrlSaved] = useState(false)
   const [savingClaude, setSavingClaude] = useState(false)
   const [savingOpenai, setSavingOpenai] = useState(false)
   const [claudeSaved, setClaudeSaved] = useState(false)
@@ -98,6 +100,16 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
     } else {
       setClaudeError(result.error ?? 'Fehler beim Speichern')
     }
+  }
+
+  const saveOpenclawUrl = async () => {
+    if (!openclawUrl.trim()) return
+    setSavingOpenclawUrl(true)
+    await window.gerki.openclaw.setUrl(openclawUrl.trim())
+    setSavingOpenclawUrl(false)
+    setOpenclawUrlSaved(true)
+    setTimeout(() => setOpenclawUrlSaved(false), 3000)
+    await checkOpenclawStatus()
   }
 
   const saveOpenaiKey = async () => {
@@ -255,12 +267,28 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
 
           <div>
             <label className="block text-xs text-white/30 mb-1.5">Openclaw URL</label>
-            <input
-              type="text"
-              value={openclawUrl}
-              onChange={(e) => setOpenclawUrl(e.target.value)}
-              className="w-full bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50 transition-colors"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={openclawUrl}
+                onChange={(e) => setOpenclawUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveOpenclawUrl()}
+                className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50 transition-colors"
+              />
+              <button
+                onClick={saveOpenclawUrl}
+                disabled={savingOpenclawUrl}
+                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
+              >
+                {savingOpenclawUrl ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : openclawUrlSaved ? (
+                  <CheckCircle size={14} className="text-green-400" />
+                ) : (
+                  'Speichern'
+                )}
+              </button>
+            </div>
           </div>
         </section>
 
