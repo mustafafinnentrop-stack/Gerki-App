@@ -57,7 +57,9 @@ const SKILL_DOT_COLORS: Record<string, string> = {
 }
 
 function formatTime(dateStr: string): string {
-  const date = new Date(dateStr)
+  // SQLite datetime('now') liefert UTC ohne 'Z' → als UTC parsen
+  const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z'
+  const date = new Date(utcStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60000)

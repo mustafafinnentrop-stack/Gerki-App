@@ -51,10 +51,14 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<{ ok: 
       signal: AbortSignal.timeout(10000)
     })
 
-    if (!res.ok) return { ok: false, status: res.status }
+    if (!res.ok) {
+      console.warn(`[CloudSync] ${options.method ?? 'GET'} ${path} → ${res.status}`)
+      return { ok: false, status: res.status }
+    }
     const data = await res.json()
     return { ok: true, data, status: res.status }
-  } catch {
+  } catch (err) {
+    console.warn(`[CloudSync] Netzwerkfehler: ${path}`, err)
     return { ok: false }
   }
 }
@@ -186,4 +190,26 @@ export function getCloudId(localConvId: string): string | null {
     .prepare('SELECT cloud_id FROM conversations WHERE id = ?')
     .get(localConvId) as { cloud_id: string | null } | undefined
   return row?.cloud_id ?? null
+}
+
+/** Sync-Status für Diagnose */
+export async function getSyncStatus(): Promise<{
+  loggedIn: boolean
+  deviceId: string
+  queueSize: number
+  testResult?: string
+}> {
+  const loggedIn = isLoggedIn()
+  const deviceId = getDeviceId()
+  const queueSize = (getDB().prepare('SELECT COUNT(*) as n FROM sync_queue').get() as { n: number }).n
+
+  let testResult: string | undefined
+  if (loggedIn) {
+    const res = await apiFetch('/api/app/sync/conversations')
+    testResult = res.ok ? `OK (${(res.data as { conversations: unknown[] }).conversations?.length ?? 0} Gespräche)` : `Fehler ${res.status ?? 'Netzwerk'}`
+  } else {
+    testResult = 'Nicht eingeloggt – kein Token gespeichert'
+  }
+
+  return { loggedIn, deviceId, queueSize, testResult }
 }

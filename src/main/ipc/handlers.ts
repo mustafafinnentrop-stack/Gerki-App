@@ -54,7 +54,7 @@ import {
 import { getOfflineWarning } from '../core/planEnforcement'
 import { getLastVerifiedAt } from '../core/remoteAuth'
 import { saveDocument } from '../core/documentExport'
-import { fetchCloudConversations, fetchCloudMessages, fetchUsage, flushSyncQueue, getDeviceId } from '../core/cloudSync'
+import { fetchCloudConversations, fetchCloudMessages, fetchUsage, flushSyncQueue, getDeviceId, getSyncStatus } from '../core/cloudSync'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
@@ -683,5 +683,9 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('sync:device-id', () => {
     return getDeviceId()
+  })
+
+  ipcMain.handle('sync:status', async () => {
+    return getSyncStatus()
   })
 }

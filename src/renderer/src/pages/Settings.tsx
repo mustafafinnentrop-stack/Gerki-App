@@ -49,6 +49,8 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
   const [appVersion, setAppVersion] = useState<string>('')
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'error'>('idle')
+  const [syncStatus, setSyncStatus] = useState<{ loggedIn: boolean; deviceId: string; queueSize: number; testResult?: string } | null>(null)
+  const [checkingSync, setCheckingSync] = useState(false)
 
   useEffect(() => {
     window.gerki.settings.get().then((s) => {
@@ -73,6 +75,13 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
     })
     return () => { unsubAvailable(); unsubNotAvail(); unsubError(); unsubPull() }
   }, [])
+
+  const checkSyncStatus = async () => {
+    setCheckingSync(true)
+    const status = await (window.gerki as { sync?: { status: () => Promise<unknown> } }).sync?.status()
+    setSyncStatus(status as typeof syncStatus)
+    setCheckingSync(false)
+  }
 
   const checkForUpdates = async () => {
     setCheckingUpdate(true)
@@ -399,6 +408,51 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
               })}
             </div>
           )}
+        </section>
+
+        {/* Cloud-Sync Status */}
+        <section>
+          <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Cloud-Sync</h2>
+          <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/80 font-medium">Gerki Cloud</p>
+                <p className="text-xs text-white/40 mt-0.5">Synchronisiert Chats mit gerki.app</p>
+              </div>
+              <button
+                onClick={checkSyncStatus}
+                disabled={checkingSync}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 text-xs hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                {checkingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                Status prüfen
+              </button>
+            </div>
+            {syncStatus && (
+              <div className="text-xs space-y-1 pt-2 border-t border-white/5">
+                <div className="flex justify-between text-white/50">
+                  <span>Angemeldet</span>
+                  <span className={syncStatus.loggedIn ? 'text-green-400' : 'text-red-400'}>
+                    {syncStatus.loggedIn ? 'Ja ✓' : 'Nein – bitte neu einloggen'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-white/50">
+                  <span>Gerät-ID</span>
+                  <span className="font-mono text-white/40">{syncStatus.deviceId}</span>
+                </div>
+                <div className="flex justify-between text-white/50">
+                  <span>Offline-Queue</span>
+                  <span>{syncStatus.queueSize} ausstehend</span>
+                </div>
+                <div className="flex justify-between text-white/50">
+                  <span>API-Test</span>
+                  <span className={syncStatus.testResult?.startsWith('OK') ? 'text-green-400' : 'text-red-400'}>
+                    {syncStatus.testResult}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Updates */}
