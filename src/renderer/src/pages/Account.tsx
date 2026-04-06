@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { User, Crown, Shield, LogOut, Trash2, Eye, EyeOff, Loader2, CheckCircle2, Lock } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { User, Crown, Shield, LogOut, Trash2, Eye, EyeOff, Loader2, CheckCircle2, Lock, BarChart2, RefreshCw } from 'lucide-react'
 
 interface UserInfo {
   id: string
@@ -7,6 +7,15 @@ interface UserInfo {
   email: string
   plan: string
   created_at: string
+}
+
+interface UsageInfo {
+  plan: string
+  used: number
+  limit: number
+  remaining: number
+  percent: number
+  month: string
 }
 
 interface AccountPageProps {
@@ -72,6 +81,22 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   const [pwError, setPwError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [usage, setUsage] = useState<UsageInfo | null>(null)
+  const [usageLoading, setUsageLoading] = useState(false)
+
+  const loadUsage = async () => {
+    setUsageLoading(true)
+    try {
+      const data = await window.gerki.sync.usage()
+      setUsage(data)
+    } catch {
+      // ignore
+    } finally {
+      setUsageLoading(false)
+    }
+  }
+
+  useEffect(() => { loadUsage() }, [])
 
   const planKey = user.plan === 'free' ? 'trial' : user.plan
   const plan = PLAN_CONFIG[planKey as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.expired
@@ -212,6 +237,66 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
                 Jetzt upgraden auf gerki.app
               </button>
             </div>
+          )}
+        </div>
+
+        {/* Token-Verbrauch */}
+        <div className="bg-surface border border-white/5 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart2 size={16} className="text-primary" />
+              <h3 className="text-white font-medium">Token-Verbrauch</h3>
+              {usage && <span className="text-white/30 text-xs">{usage.month}</span>}
+            </div>
+            <button
+              onClick={loadUsage}
+              disabled={usageLoading}
+              className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
+            >
+              <RefreshCw size={14} className={usageLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          {usageLoading && !usage ? (
+            <div className="flex items-center gap-2 text-white/30 text-sm">
+              <Loader2 size={14} className="animate-spin" />
+              Lade Verbrauch…
+            </div>
+          ) : usage ? (
+            <div className="space-y-3">
+              <div className="flex items-end justify-between">
+                <span className="text-white/50 text-sm">Verbrauchte Tokens</span>
+                <span className="text-white font-semibold tabular-nums">
+                  {usage.used.toLocaleString('de-DE')}
+                  <span className="text-white/30 font-normal text-xs ml-1">/ {usage.limit.toLocaleString('de-DE')}</span>
+                </span>
+              </div>
+              <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all ${
+                    usage.percent >= 90 ? 'bg-red-400' : usage.percent >= 70 ? 'bg-yellow-400' : 'bg-primary'
+                  }`}
+                  style={{ width: `${Math.min(usage.percent, 100)}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className={`font-medium ${
+                  usage.percent >= 90 ? 'text-red-400' : usage.percent >= 70 ? 'text-yellow-400' : 'text-primary'
+                }`}>
+                  {usage.percent.toFixed(1)} % verbraucht
+                </span>
+                <span className="text-white/30">{usage.remaining.toLocaleString('de-DE')} verbleibend</span>
+              </div>
+              {usage.percent >= 90 && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-sm">
+                  Kontingent fast erschöpft — erwäge ein Upgrade auf einen höheren Plan.
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-white/30 text-sm">
+              Keine Daten verfügbar — stelle sicher, dass du eingeloggt bist und eine aktive Internetverbindung hast.
+            </p>
           )}
         </div>
 
