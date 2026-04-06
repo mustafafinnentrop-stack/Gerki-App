@@ -111,7 +111,7 @@ function CopyButton({ text }: { text: string }): React.JSX.Element {
     <button
       onClick={handleCopy}
       title="Kopieren"
-      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 text-white/30 hover:text-white/60"
+      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
     >
       {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
     </button>
@@ -146,7 +146,7 @@ function SaveDocButton({ content }: { content: string }): React.JSX.Element {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Als Dokument speichern"
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-white/10 text-white/30 hover:text-white/60"
+        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
       >
         {saving ? (
           <Loader2 size={13} className="animate-spin text-white/50" />
@@ -237,12 +237,20 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
               </ReactMarkdown>
             )}
           </div>
-          {/* Action buttons (copy + save) */}
-          <div className={`absolute top-1 ${isUser ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1'} flex flex-col gap-0.5`}>
-            <CopyButton text={message.content} />
-            {!isUser && <SaveDocButton content={message.content} />}
-          </div>
+          {/* Copy button (hover, floating) */}
+          {isUser && (
+            <div className="absolute top-1 left-0 -translate-x-full pr-1">
+              <CopyButton text={message.content} />
+            </div>
+          )}
         </div>
+        {/* Assistant action bar: always visible below bubble */}
+        {!isUser && (
+          <div className="flex items-center gap-1 mt-1 pl-1">
+            <CopyButton text={message.content} />
+            <SaveDocButton content={message.content} />
+          </div>
+        )}
 
         {/* Gespeicherte Agenten-Schritte */}
         {!isUser && message.agentSteps && message.agentSteps.length > 0 && (
