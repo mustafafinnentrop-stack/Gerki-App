@@ -274,10 +274,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('openclaw:install-auto', async () => {
     try {
-      mainWindow.webContents.send('openclaw:install-progress', { status: 'Starte Openclaw via Ollama...', percent: 10 })
-
       if (process.platform === 'win32') {
-        // Windows: Firewall-Regel für Port 8765 hinzufügen (UAC-Prompt erscheint)
+        // Windows: Firewall-Regel für Port 8765 + ollama launch openclaw
         mainWindow.webContents.send('openclaw:install-progress', { status: 'Firewall-Regel für Port 8765 wird hinzugefügt...', percent: 20 })
         exec(
           'powershell -Command "Start-Process powershell -ArgumentList \'-Command netsh advfirewall firewall add rule name=\\\"OpenClaw 8765\\\" dir=in action=allow protocol=TCP localport=8765\' -Verb RunAs -Wait"',
@@ -285,18 +283,28 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         )
         await new Promise(r => setTimeout(r, 3000))
 
-        // Windows: ollama launch openclaw als losgelöster Hintergrundprozess
         mainWindow.webContents.send('openclaw:install-progress', { status: 'Starte OpenClaw im Hintergrund...', percent: 40 })
-        const child = exec('start /B ollama launch openclaw', { windowsHide: true })
-        child.unref()
+        const winChild = exec('start /B ollama launch openclaw', { windowsHide: true })
+        winChild.unref()
       } else {
-        // macOS/Linux: direkt im Hintergrund starten
-        mainWindow.webContents.send('openclaw:install-progress', { status: 'Starte OpenClaw im Hintergrund...', percent: 40 })
-        const child = exec('ollama launch openclaw &')
-        child.unref()
+        // macOS/Linux: Installer-Script von openclaw.ai herunterladen und ausführen
+        mainWindow.webContents.send('openclaw:install-progress', { status: 'Installiere OpenClaw via install.sh...', percent: 20 })
+
+        await new Promise<void>((resolve, reject) => {
+          exec('curl -fsSL https://openclaw.ai/install.sh | bash', { timeout: 120000 }, (error) => {
+            if (error) reject(error)
+            else resolve()
+          })
+        })
+
+        mainWindow.webContents.send('openclaw:install-progress', { status: 'Installation abgeschlossen. Starte OpenClaw...', percent: 70 })
+
+        // Nach Installation starten
+        const macChild = exec('openclaw &')
+        macChild.unref()
       }
 
-      mainWindow.webContents.send('openclaw:install-progress', { status: 'Warte auf Verbindung... (bis zu 30s)', percent: 60 })
+      mainWindow.webContents.send('openclaw:install-progress', { status: 'Warte auf Verbindung... (bis zu 30s)', percent: 80 })
 
       // Warte bis Openclaw-Server erreichbar ist (max 30s)
       for (let i = 0; i < 15; i++) {
@@ -304,7 +312,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         try {
           const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
           if (res.ok) {
-            mainWindow.webContents.send('openclaw:install-progress', { status: 'Openclaw bereit!', percent: 100 })
+            mainWindow.webContents.send('openclaw:install-progress', { status: 'OpenClaw bereit!', percent: 100 })
             return { success: true }
           }
         } catch { /* noch nicht bereit */ }
@@ -323,7 +331,8 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         const child = exec('start /B ollama launch openclaw', { windowsHide: true })
         child.unref()
       } else {
-        const child = exec('ollama launch openclaw &')
+        // macOS/Linux: openclaw direkt starten
+        const child = exec('openclaw &')
         child.unref()
       }
       // Kurz warten dann Status prüfen

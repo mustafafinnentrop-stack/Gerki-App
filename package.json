@@ -124,10 +124,7 @@
     "dmg": {
       "title": "Gerki Installer",
       "backgroundColor": "#1a1a2e",
-      "window": {
-        "width": 540,
-        "height": 380
-      },
+      "window": { "width": 540, "height": 380 },
       "writeUpdateInfo": false
     },
     "linux": {
