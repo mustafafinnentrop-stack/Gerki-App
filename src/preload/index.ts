@@ -115,6 +115,15 @@ const gerki = {
     getVersion: () => ipcRenderer.invoke('app:get-version')
   },
 
+  // ── Cloud Sync ────────────────────────────────────────────────────
+  sync: {
+    conversations: () => ipcRenderer.invoke('sync:conversations'),
+    messages: (cloudConvId: string) => ipcRenderer.invoke('sync:messages', cloudConvId),
+    usage: () => ipcRenderer.invoke('sync:usage'),
+    flush: () => ipcRenderer.invoke('sync:flush'),
+    deviceId: () => ipcRenderer.invoke('sync:device-id')
+  },
+
   // ── Events ────────────────────────────────────────────────────────
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => callback(...args)

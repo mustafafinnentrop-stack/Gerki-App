@@ -35,8 +35,19 @@ CREATE TABLE IF NOT EXISTS conversations (
   id         TEXT PRIMARY KEY,
   title      TEXT,
   skill      TEXT DEFAULT 'general',  -- welcher Skill war aktiv
+  cloud_id   TEXT,                    -- ID in der Gerki-Cloud (null = nicht synced)
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- =====================================================
+-- SYNC QUEUE: Offline-Nachrichten die noch gesynct werden müssen
+-- =====================================================
+CREATE TABLE IF NOT EXISTS sync_queue (
+  id         TEXT PRIMARY KEY,
+  type       TEXT NOT NULL CHECK(type IN ('conversation', 'message')),
+  payload    TEXT NOT NULL,  -- JSON
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS messages (

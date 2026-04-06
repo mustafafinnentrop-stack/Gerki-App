@@ -77,10 +77,15 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
   const checkForUpdates = async () => {
     setCheckingUpdate(true)
     setUpdateStatus('checking')
-    await window.gerki.appInfo?.checkForUpdates()
+    const result = await window.gerki.appInfo?.checkForUpdates()
     setCheckingUpdate(false)
-    // Status wird via Event gesetzt (available / up-to-date / error)
-    setTimeout(() => { if (updateStatus === 'checking') setUpdateStatus('up-to-date') }, 8000)
+    // Wenn der Handler einen Fehler zurückgibt (z.B. Dev-Modus)
+    if (result && !result.success) {
+      setUpdateStatus('up-to-date')
+      return
+    }
+    // Fallback: nach 10s auf up-to-date setzen falls kein Event kommt
+    setTimeout(() => setUpdateStatus((prev) => prev === 'checking' ? 'up-to-date' : prev), 10000)
   }
 
   const checkOpenclawStatus = async () => {
