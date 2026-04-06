@@ -1,6 +1,6 @@
 {
   "name": "gerki",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Gerki – Alle KIs. Eine App. Ihr PC. Persönlicher Assistent mit Claude, ChatGPT und Openclaw.",
   "main": "out/main/index.js",
   "scripts": {
