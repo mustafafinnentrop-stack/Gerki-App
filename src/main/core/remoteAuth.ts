@@ -162,37 +162,38 @@ export async function remoteLogin(email: string, password: string): Promise<Remo
 
 /**
  * Stored Token beim App-Start verifizieren.
- * Online: frisch vom Server. Offline: Nutzer aus Cache.
+ * Gibt gecachten User SOFORT zurück → App startet ohne Netzwerk-Verzögerung.
+ * Token-Verifikation läuft im Hintergrund und aktualisiert den Cache.
  */
 export async function verifyStoredToken(): Promise<RemoteUser | null> {
   const token = loadToken()
   if (!token) return null
 
+  // Gecachten User sofort zurückgeben → kein Warten auf Netzwerk
+  const cached = getCachedUser()
+
+  // Hintergrund-Verifikation startet asynchron (blockiert nicht)
+  verifyTokenInBackground(token)
+
+  return cached
+}
+
+function verifyTokenInBackground(token: string): void {
   const base = getApiBase()
-
-  try {
-    const res = await fetch(`${base}/api/app/auth/verify`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(5000)
+  fetch(`${base}/api/app/auth/verify`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(8000)
+  })
+    .then(async (res) => {
+      if (!res.ok) { clearToken(); return }
+      const data = (await res.json()) as { valid: boolean; user?: RemoteUser }
+      if (data.valid && data.user) {
+        cacheUser(data.user)
+      } else {
+        clearToken()
+      }
     })
-
-    if (!res.ok) {
-      clearToken()
-      return null
-    }
-
-    const data = (await res.json()) as { valid: boolean; user?: RemoteUser }
-    if (data.valid && data.user) {
-      cacheUser(data.user)
-      return data.user
-    }
-
-    clearToken()
-    return null
-  } catch {
-    // Offline: letzten gecachten Nutzer zurückgeben
-    return getCachedUser()
-  }
+    .catch(() => { /* Offline – gecachten User behalten */ })
 }
 
 /** Gespeichertes Token für autorisierte API-Aufrufe abrufen */
