@@ -125,6 +125,16 @@ function SaveDocButton({ content }: { content: string }): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
   const suggestedName = content.slice(0, 40).replace(/[^a-zA-ZäöüÄÖÜß0-9 ]/g, '').trim() || 'Gerki-Dokument'
 
@@ -143,7 +153,7 @@ function SaveDocButton({ content }: { content: string }): React.JSX.Element {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         title="Als Dokument speichern"
@@ -158,7 +168,7 @@ function SaveDocButton({ content }: { content: string }): React.JSX.Element {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl py-1 w-36">
+        <div className="absolute right-0 bottom-full mb-1 z-50 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl py-1 w-36">
           <button onClick={() => save('pdf')} className="w-full text-left px-3 py-2 text-xs text-white/80 hover:bg-white/10 flex items-center gap-2">
             <FileText size={12} className="text-red-400" /> Als PDF
           </button>
