@@ -70,7 +70,19 @@ function createWindow(): void {
 
 // ── Auto-Updater ──────────────────────────────────────────────────────────
 function setupAutoUpdater(): void {
-  if (is.dev) return  // Kein Auto-Update im Dev-Modus
+  // IPC Handler immer registrieren (auch im Dev-Modus)
+  ipcMain.handle('app:get-version', () => app.getVersion())
+  ipcMain.handle('app:check-for-updates', async () => {
+    if (is.dev) return { success: false, error: 'Updates nur in der produktiven App verfügbar.' }
+    try {
+      await autoUpdater.checkForUpdates()
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
+
+  if (is.dev) return  // Kein automatischer Update-Check im Dev-Modus
 
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
@@ -113,18 +125,6 @@ function setupAutoUpdater(): void {
   // Alle 4 Stunden nach Updates suchen
   autoUpdater.checkForUpdates()
   setInterval(() => autoUpdater.checkForUpdates(), 4 * 60 * 60 * 1000)
-
-  // Manueller Update-Check via IPC
-  ipcMain.handle('app:check-for-updates', async () => {
-    try {
-      await autoUpdater.checkForUpdates()
-      return { success: true }
-    } catch (err) {
-      return { success: false, error: String(err) }
-    }
-  })
-
-  ipcMain.handle('app:get-version', () => app.getVersion())
 }
 
 // App bereit
