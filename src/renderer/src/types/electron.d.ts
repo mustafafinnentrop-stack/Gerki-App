@@ -185,7 +185,8 @@ declare global {
           success: boolean
           name?: string
           content?: string | null
-          type?: 'text' | 'binary'
+          type?: 'text' | 'binary' | 'image'
+          mimeType?: string
           error?: string
         }>
       }

@@ -39,7 +39,8 @@ interface Message {
 interface AttachedFile {
   name: string
   content: string | null
-  type: 'text' | 'binary'
+  type: 'text' | 'binary' | 'image'
+  mimeType?: string
 }
 
 interface ChatPageProps {
@@ -509,7 +510,7 @@ export default function ChatPage({
       if (result.success && result.name) {
         setAttachedFiles((prev) => [
           ...prev,
-          { name: result.name!, content: result.content ?? null, type: result.type ?? 'text' }
+          { name: result.name!, content: result.content ?? null, type: result.type ?? 'text', mimeType: result.mimeType }
         ])
       }
     } finally {
@@ -530,13 +531,22 @@ export default function ChatPage({
     // Nachricht mit Dateiinhalt anreichern
     let fullMessage = text
     if (attachedFiles.length > 0) {
-      const fileContext = attachedFiles
-        .filter((f) => f.content)
+      const textFiles = attachedFiles.filter((f) => f.type === 'text' && f.content)
+      const imageFiles = attachedFiles.filter((f) => f.type === 'image' && f.content)
+      const binaryFiles = attachedFiles.filter((f) => f.type === 'binary' || !f.content)
+
+      // Textdateien als Kontext einfügen
+      const fileContext = textFiles
         .map((f) => `[DATEI: ${f.name}]\n\`\`\`\n${f.content}\n\`\`\``)
         .join('\n\n')
-      const binaryFiles = attachedFiles.filter((f) => !f.content).map((f) => f.name)
 
-      if (fileContext) fullMessage = `${fileContext}\n\n---\n\n${text || 'Analysiere diese Datei(en) bitte.'}`
+      // Bilder als speziellen Marker (werden im Backend als Vision-Input behandelt)
+      const imageContext = imageFiles
+        .map((f) => `[BILD: ${f.name}] data:${f.mimeType ?? 'image/jpeg'};base64,${f.content}`)
+        .join('\n')
+
+      const allContext = [fileContext, imageContext].filter(Boolean).join('\n\n')
+      if (allContext) fullMessage = `${allContext}\n\n---\n\n${text || 'Analysiere diese Datei(en) / dieses Bild bitte.'}`
       if (binaryFiles.length > 0) {
         fullMessage += `\n\n(Folgende Dateien konnten nicht gelesen werden: ${binaryFiles.join(', ')})`
       }
@@ -732,7 +742,15 @@ export default function ChatPage({
                 key={i}
                 className="flex items-center gap-1.5 bg-white/10 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white/70"
               >
-                <FileText size={11} className="text-white/40" />
+                {file.type === 'image' && file.content ? (
+                  <img
+                    src={`data:${file.mimeType ?? 'image/jpeg'};base64,${file.content}`}
+                    className="w-6 h-6 rounded object-cover flex-shrink-0"
+                    alt={file.name}
+                  />
+                ) : (
+                  <FileText size={11} className="text-white/40 flex-shrink-0" />
+                )}
                 <span className="max-w-[200px] truncate">{file.name}</span>
                 {file.type === 'binary' && <span className="text-white/30">(binär)</span>}
                 <button

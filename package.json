@@ -32,7 +32,8 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-ts": "^2.0.0",
@@ -124,7 +125,10 @@
     "dmg": {
       "title": "Gerki Installer",
       "backgroundColor": "#1a1a2e",
-      "window": { "width": 540, "height": 380 },
+      "window": {
+        "width": 540,
+        "height": 380
+      },
       "writeUpdateInfo": false
     },
     "linux": {

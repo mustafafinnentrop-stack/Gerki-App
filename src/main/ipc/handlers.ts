@@ -10,6 +10,8 @@ import { tmpdir } from 'os'
 import { exec } from 'child_process'
 import { get as httpsGet } from 'https'
 import pdfParse from 'pdf-parse'
+import mammoth from 'mammoth'
+import * as XLSX from 'xlsx'
 import {
   processMessage,
   saveApiKey,
@@ -576,13 +578,27 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     '.txt', '.md', '.csv', '.json', '.xml', '.yaml', '.yml',
     '.js', '.ts', '.py', '.html', '.css', '.sh', '.log'
   ])
+  const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'])
+  const EXCEL_EXTENSIONS = new Set(['.xlsx', '.xls', '.ods'])
+  const WORD_EXTENSIONS = new Set(['.docx'])
 
   ipcMain.handle('chat:pick-file', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Datei an Chat anhängen',
       properties: ['openFile'],
       filters: [
-        { name: 'Text & Dokumente', extensions: ['txt', 'md', 'csv', 'json', 'pdf', 'xml', 'yaml', 'yml', 'js', 'ts', 'py', 'html', 'log'] },
+        {
+          name: 'Alle unterstützten Dateien',
+          extensions: ['txt', 'md', 'csv', 'json', 'pdf', 'xml', 'yaml', 'yml',
+            'docx', 'xlsx', 'xls', 'ods',
+            'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp',
+            'js', 'ts', 'py', 'html', 'css', 'sh', 'log']
+        },
+        { name: 'Word Dokumente', extensions: ['docx'] },
+        { name: 'Excel Tabellen', extensions: ['xlsx', 'xls', 'ods'] },
+        { name: 'Bilder', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'] },
+        { name: 'PDF', extensions: ['pdf'] },
+        { name: 'Text & Code', extensions: ['txt', 'md', 'csv', 'json', 'xml', 'yaml', 'yml', 'js', 'ts', 'py', 'html', 'css', 'sh', 'log'] },
         { name: 'Alle Dateien', extensions: ['*'] }
       ]
     })
@@ -597,12 +613,43 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         const content = readFileSync(filePath, 'utf-8')
         const truncated = content.length > 50_000 ? content.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : content
         return { success: true, name: fileName, content: truncated, type: 'text' }
+
       } else if (ext === '.pdf') {
         const buffer = readFileSync(filePath)
         const data = await pdfParse(buffer)
         const text = data.text.trim()
         const truncated = text.length > 50_000 ? text.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : text
         return { success: true, name: fileName, content: truncated || '[PDF enthält keinen lesbaren Text]', type: 'text' }
+
+      } else if (WORD_EXTENSIONS.has(ext)) {
+        const buffer = readFileSync(filePath)
+        const result = await mammoth.extractRawText({ buffer })
+        const text = result.value.trim()
+        const truncated = text.length > 50_000 ? text.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : text
+        return { success: true, name: fileName, content: truncated || '[Word-Dokument enthält keinen lesbaren Text]', type: 'text' }
+
+      } else if (EXCEL_EXTENSIONS.has(ext)) {
+        const buffer = readFileSync(filePath)
+        const workbook = XLSX.read(buffer, { type: 'buffer' })
+        let text = ''
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName]
+          const csv = XLSX.utils.sheet_to_csv(sheet)
+          if (csv.trim()) text += `=== Tabellenblatt: ${sheetName} ===\n${csv}\n\n`
+        }
+        const truncated = text.length > 50_000 ? text.slice(0, 50_000) + '\n\n[... begrenzt auf 50.000 Zeichen]' : text
+        return { success: true, name: fileName, content: truncated || '[Excel-Datei enthält keine Daten]', type: 'text' }
+
+      } else if (IMAGE_EXTENSIONS.has(ext)) {
+        const buffer = readFileSync(filePath)
+        const base64 = buffer.toString('base64')
+        const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
+          : ext === '.png' ? 'image/png'
+          : ext === '.gif' ? 'image/gif'
+          : ext === '.webp' ? 'image/webp'
+          : 'image/png'
+        return { success: true, name: fileName, content: base64, type: 'image', mimeType }
+
       } else {
         return { success: true, name: fileName, content: null, type: 'binary' }
       }
