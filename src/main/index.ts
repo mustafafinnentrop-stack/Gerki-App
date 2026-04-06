@@ -51,7 +51,7 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    show: false,
+    show: true,
     autoHideMenuBar: true,
     // hiddenInset ist macOS-only; auf Windows normale Titelleiste
     titleBarStyle: isWindows ? 'default' : 'hiddenInset',
@@ -67,14 +67,10 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow!.show()
+    mainWindow!.focus()
   })
 
-  // Fallback: Fenster nach 10s anzeigen falls ready-to-show nicht feuert
-  setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      mainWindow.show()
-    }
-  }, 10000)
+  // Fallback entfernt — show: true sorgt dafür dass Fenster immer erscheint
 
   // Externe Links im Systembrowser öffnen
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
