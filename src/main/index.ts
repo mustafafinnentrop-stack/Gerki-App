@@ -11,6 +11,7 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { restoreWatchers } from './core/fileIndexer'
 import { getDB, closeDB } from './db/database'
 import { handleDeepLink } from './core/deepLink'
+import { flushSyncQueue } from './core/cloudSync'
 
 // gerki-app:// Protocol Handler registrieren
 if (process.defaultApp) {
@@ -138,6 +139,9 @@ app.whenReady().then(() => {
   } catch {
     // Kein Blocker beim Start
   }
+
+  // Offline-Queue: nicht gesendete Nachrichten nachsyncen
+  setTimeout(() => flushSyncQueue().catch(() => {}), 5000)
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

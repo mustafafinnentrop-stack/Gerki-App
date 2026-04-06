@@ -52,6 +52,7 @@ import {
 import { getOfflineWarning } from '../core/planEnforcement'
 import { getLastVerifiedAt } from '../core/remoteAuth'
 import { saveDocument } from '../core/documentExport'
+import { fetchCloudConversations, fetchCloudMessages, fetchUsage, flushSyncQueue, getDeviceId } from '../core/cloudSync'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
@@ -613,5 +614,27 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // ── Dokument-Export ─────────────────────────────────────────────────
   ipcMain.handle('document:save', async (_event, content: string, format: 'pdf' | 'docx' | 'txt', suggestedName: string) => {
     return saveDocument(content, format, suggestedName, mainWindow)
+  })
+
+  // ── Cloud Sync ───────────────────────────────────────────────────────
+  ipcMain.handle('sync:conversations', async () => {
+    return fetchCloudConversations()
+  })
+
+  ipcMain.handle('sync:messages', async (_event, cloudConvId: string) => {
+    return fetchCloudMessages(cloudConvId)
+  })
+
+  ipcMain.handle('sync:usage', async () => {
+    return fetchUsage()
+  })
+
+  ipcMain.handle('sync:flush', async () => {
+    await flushSyncQueue()
+    return { success: true }
+  })
+
+  ipcMain.handle('sync:device-id', () => {
+    return getDeviceId()
   })
 }

@@ -23,11 +23,23 @@ export function getDB(): Database.Database {
   // Schema anlegen
   db.exec(SCHEMA)
 
+  // Migrationen für bestehende DBs
+  runMigrations(db)
+
   // Standard-Skills eintragen
   seedSkills(db)
 
   console.log(`[DB] Geöffnet: ${dbPath}`)
   return db
+}
+
+function runMigrations(db: Database.Database): void {
+  // cloud_id Spalte in conversations hinzufügen (für bestehende DBs)
+  const cols = db.pragma('table_info(conversations)') as Array<{ name: string }>
+  if (!cols.find((c) => c.name === 'cloud_id')) {
+    db.exec('ALTER TABLE conversations ADD COLUMN cloud_id TEXT')
+  }
+  // sync_queue Tabelle (wird durch SCHEMA bereits angelegt wenn sie fehlt)
 }
 
 function seedSkills(db: Database.Database): void {

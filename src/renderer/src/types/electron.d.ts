@@ -205,6 +205,21 @@ declare global {
         getVersion: () => Promise<string>
       }
 
+      // ── Cloud Sync ────────────────────────────────────────────────
+      sync: {
+        conversations: () => Promise<Array<{
+          id: string; title: string; agentType: string; deviceId: string; updatedAt: string
+        }>>
+        messages: (cloudConvId: string) => Promise<Array<{
+          id: string; role: string; content: string; createdAt: string
+        }>>
+        usage: () => Promise<{
+          plan: string; used: number; limit: number; remaining: number; percent: number; month: string
+        } | null>
+        flush: () => Promise<{ success: boolean }>
+        deviceId: () => Promise<string>
+      }
+
       // ── Plan Enforcement ──────────────────────────────────────────
       plan: {
         offlineWarning: () => Promise<{ daysRemaining: number; warn: boolean } | null>

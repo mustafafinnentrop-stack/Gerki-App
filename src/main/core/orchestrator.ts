@@ -22,6 +22,7 @@ import type { AgentStep } from './agenticLoop'
 import { getOllamaClient, DEFAULT_OLLAMA_MODEL } from './ollamaClient'
 import { checkAccess, getEffectivePlan } from './planEnforcement'
 import { getCachedUser, getLastVerifiedAt } from './remoteAuth'
+import { syncCreateConversation, syncAddMessage, trackUsage, getCloudId } from './cloudSync'
 import { v4 as uuidv4 } from 'uuid'
 
 export type AIModel = 'claude' | 'gpt-4' | 'gpt-3.5' | 'ollama'
@@ -242,6 +243,21 @@ export async function processMessage(
   // 6. Usernachricht speichern
   saveMessage(conversationId, 'user', req.userMessage, model, skillSlug)
 
+  // 6b. Cloud-Sync: Conversation anlegen (beim ersten Mal) + User-Msg senden
+  const isNewConversation = !req.conversationId
+  ;(async () => {
+    try {
+      let cloudId = getCloudId(conversationId)
+      if (!cloudId) {
+        const title = req.userMessage.slice(0, 60)
+        cloudId = await syncCreateConversation(conversationId, title, skillSlug)
+      }
+      if (cloudId) {
+        await syncAddMessage(cloudId, 'user', req.userMessage)
+      }
+    } catch { /* Nie die Antwort blockieren */ }
+  })()
+
   // 7. KI aufrufen
   let responseContent = ''
 
@@ -274,6 +290,18 @@ export async function processMessage(
       })
 
       const messageId = saveMessage(conversationId, 'assistant', responseContent, model, skillSlug)
+
+      // Cloud-Sync für agentic response
+      ;(async () => {
+        try {
+          const cloudId = getCloudId(conversationId)
+          if (cloudId) {
+            const tokenCount = Math.ceil(responseContent.length / 4)
+            await syncAddMessage(cloudId, 'assistant', responseContent, tokenCount)
+            await trackUsage(model, Math.ceil(req.userMessage.length / 4), tokenCount)
+          }
+        } catch { /* Kein Blocker */ }
+      })()
 
       // Fakten extrahieren
       try {
@@ -373,6 +401,18 @@ export async function processMessage(
 
   // 8. Antwort speichern
   const messageId = saveMessage(conversationId, 'assistant', responseContent, model, skillSlug)
+
+  // 8b. Cloud-Sync: Assistent-Antwort + Usage senden (im Hintergrund)
+  ;(async () => {
+    try {
+      const cloudId = getCloudId(conversationId)
+      if (cloudId) {
+        const tokenCount = Math.ceil(responseContent.length / 4) // Schätzung
+        await syncAddMessage(cloudId, 'assistant', responseContent, tokenCount)
+        await trackUsage(model, Math.ceil(req.userMessage.length / 4), tokenCount)
+      }
+    } catch { /* Nie die Antwort blockieren */ }
+  })()
 
   // 9. Neue Fakten im Hintergrund extrahieren – niemals die Antwort blockieren
   if (model === 'ollama') {
