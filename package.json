@@ -1,6 +1,6 @@
 {
   "name": "gerki",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "Gerki – Alle KIs. Eine App. Ihr PC. Persönlicher Assistent mit Claude, ChatGPT und Openclaw.",
   "main": "out/main/index.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "preview": "electron-vite preview",
     "package": "electron-vite build && electron-builder",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:win": "electron-vite build && electron-builder --win",
     "build:linux": "electron-vite build && electron-builder --linux",
+    "build:win": "electron-vite build && electron-builder --win",
     "build:all": "electron-vite build && electron-builder --mac --win --linux",
     "lint": "eslint src --ext .ts,.tsx"
   },
@@ -138,8 +138,23 @@
       }
     },
     "linux": {
-      "target": "AppImage",
-      "category": "Utility"
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "resources/icon.png",
+      "artifactName": "Gerki-${version}-${arch}.${ext}"
     }
   }
 }
