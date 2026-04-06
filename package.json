@@ -2,6 +2,10 @@
   "name": "gerki",
   "version": "1.0.22",
   "description": "Gerki – Alle KIs. Eine App. Ihr PC. Persönlicher Assistent mit Claude, ChatGPT und Openclaw.",
+  "author": {
+    "name": "Gerki",
+    "email": "support@gerki.app"
+  },
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
