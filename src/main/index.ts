@@ -4,6 +4,11 @@
  */
 
 import { app, BrowserWindow, shell, dialog, ipcMain } from 'electron'
+
+// Root-Umgebung (z.B. CI, Docker): --no-sandbox automatisch setzen
+if (process.env.ELECTRON_NO_SANDBOX || process.getuid?.() === 0) {
+  app.commandLine.appendSwitch('no-sandbox')
+}
 import { join } from 'path'
 import { autoUpdater } from 'electron-updater'
 import { optimizer, is } from '@electron-toolkit/utils'

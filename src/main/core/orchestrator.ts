@@ -244,7 +244,6 @@ export async function processMessage(
   saveMessage(conversationId, 'user', req.userMessage, model, skillSlug)
 
   // 6b. Cloud-Sync: Conversation anlegen (beim ersten Mal) + User-Msg senden
-  const isNewConversation = !req.conversationId
   ;(async () => {
     try {
       let cloudId = getCloudId(conversationId)

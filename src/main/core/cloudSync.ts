@@ -10,7 +10,6 @@
 import { getDB } from '../db/database'
 import { getStoredToken } from './remoteAuth'
 import { randomUUID } from 'crypto'
-import { app } from 'electron'
 
 const API_BASE = 'https://gerki.app'
 const DEVICE_ID_KEY = 'sync_device_id'

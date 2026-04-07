@@ -5,9 +5,8 @@
 
 import { dialog, BrowserWindow } from 'electron'
 import { writeFileSync } from 'fs'
-import { join } from 'path'
 import PDFDocument from 'pdfkit'
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, AlignmentType } from 'docx'
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx'
 
 export type DocFormat = 'pdf' | 'docx' | 'txt'
 

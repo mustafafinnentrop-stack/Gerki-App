@@ -4,7 +4,11 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    // In CI/root-Umgebung: --no-sandbox automatisch setzen
+    ...(process.env.ELECTRON_NO_SANDBOX ? {
+      define: { 'process.env.ELECTRON_NO_SANDBOX': '"1"' }
+    } : {})
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
