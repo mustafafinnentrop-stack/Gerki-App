@@ -1,6 +1,6 @@
 /**
  * IPC Handler – Brücke zwischen Electron (Node.js) und der React-UI
- * Alle Datei/KI/Memory-Operationen laufen hier durch.
+ * Lokal-first, DSGVO-konform: Alle Operationen bleiben auf dem Rechner des Nutzers.
  */
 
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
@@ -14,8 +14,6 @@ import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
 import {
   processMessage,
-  saveApiKey,
-  setPreferredModel,
   getSettings
 } from '../core/orchestrator'
 import {
@@ -54,9 +52,10 @@ import {
 import { getOfflineWarning } from '../core/planEnforcement'
 import { getLastVerifiedAt } from '../core/remoteAuth'
 import { saveDocument } from '../core/documentExport'
-import { fetchCloudConversations, fetchCloudMessages, fetchUsage, flushSyncQueue, getDeviceId, getSyncStatus } from '../core/cloudSync'
 
-export function registerIpcHandlers(mainWindow: BrowserWindow): void {
+export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void {
+  // Hilfsfunktion: immer das aktuelle Fenster holen (auch nach Mac-Neuöffnung)
+  const win = (): BrowserWindow => getWindow()!
 
   // =====================================================
   // CHAT / KI
@@ -64,19 +63,17 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle('chat:send', async (_event, request) => {
     try {
-      // Inject callbacks via request object (IPC doesn't allow function params)
       const enrichedRequest = {
         ...request,
         onToken: (token: string) => {
-          mainWindow.webContents.send('chat:token', token)
+          win().webContents.send('chat:token', token)
         },
         onStep: (step: unknown) => {
-          // Agentic steps: Screenshot, Klick, Tippen etc.
-          mainWindow.webContents.send('chat:agent-step', step)
+          win().webContents.send('chat:agent-step', step)
         }
       }
       const result = await processMessage(enrichedRequest, (token) => {
-        mainWindow.webContents.send('chat:token', token)
+        win().webContents.send('chat:token', token)
       })
       return { success: true, data: result }
     } catch (error) {
@@ -116,30 +113,11 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   })
 
   // =====================================================
-  // EINSTELLUNGEN / API-KEYS
+  // EINSTELLUNGEN
   // =====================================================
 
   ipcMain.handle('settings:get', () => {
-    const s = getSettings()
-    // API-Keys maskieren
-    const masked = { ...s }
-    if (masked.claude_api_key) masked.claude_api_key = '***' + masked.claude_api_key.slice(-4)
-    if (masked.openai_api_key) masked.openai_api_key = '***' + masked.openai_api_key.slice(-4)
-    return masked
-  })
-
-  ipcMain.handle('settings:save-api-key', (_event, provider: 'claude' | 'openai', key: string) => {
-    try {
-      saveApiKey(provider, key.trim())
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
-  })
-
-  ipcMain.handle('settings:set-model', (_event, model: string) => {
-    setPreferredModel(model as 'claude' | 'gpt-4' | 'gpt-3.5' | 'ollama')
-    return { success: true }
+    return getSettings()
   })
 
   // =====================================================
@@ -147,7 +125,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // =====================================================
 
   ipcMain.handle('files:add-folder', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
+    const result = await dialog.showOpenDialog(win(), {
       properties: ['openDirectory'],
       title: 'Ordner für Gerki freigeben'
     })
@@ -278,20 +256,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('openclaw:install-auto', async () => {
     try {
       if (process.platform === 'win32') {
-        // Windows: Firewall-Regel für Port 8765 + ollama launch openclaw
-        mainWindow.webContents.send('openclaw:install-progress', { status: 'Firewall-Regel für Port 8765 wird hinzugefügt...', percent: 20 })
+        win().webContents.send('openclaw:install-progress', { status: 'Firewall-Regel für Port 8765 wird hinzugefügt...', percent: 20 })
         exec(
           'powershell -Command "Start-Process powershell -ArgumentList \'-Command netsh advfirewall firewall add rule name=\\\"OpenClaw 8765\\\" dir=in action=allow protocol=TCP localport=8765\' -Verb RunAs -Wait"',
-          () => { /* Fehler ignorieren falls User abbricht */ }
+          () => {}
         )
         await new Promise(r => setTimeout(r, 3000))
 
-        mainWindow.webContents.send('openclaw:install-progress', { status: 'Starte OpenClaw im Hintergrund...', percent: 40 })
+        win().webContents.send('openclaw:install-progress', { status: 'Starte OpenClaw im Hintergrund...', percent: 40 })
         const winChild = exec('start /B ollama launch openclaw', { windowsHide: true })
         winChild.unref()
       } else {
-        // macOS/Linux: Installer-Script von openclaw.ai herunterladen und ausführen
-        mainWindow.webContents.send('openclaw:install-progress', { status: 'Installiere OpenClaw via install.sh...', percent: 20 })
+        win().webContents.send('openclaw:install-progress', { status: 'Installiere OpenClaw via install.sh...', percent: 20 })
 
         await new Promise<void>((resolve, reject) => {
           exec('curl -fsSL https://openclaw.ai/install.sh | bash', { timeout: 120000 }, (error) => {
@@ -300,22 +276,20 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
           })
         })
 
-        mainWindow.webContents.send('openclaw:install-progress', { status: 'Installation abgeschlossen. Starte OpenClaw...', percent: 70 })
+        win().webContents.send('openclaw:install-progress', { status: 'Installation abgeschlossen. Starte OpenClaw...', percent: 70 })
 
-        // Nach Installation starten
         const macChild = exec('openclaw &')
         macChild.unref()
       }
 
-      mainWindow.webContents.send('openclaw:install-progress', { status: 'Warte auf Verbindung... (bis zu 30s)', percent: 80 })
+      win().webContents.send('openclaw:install-progress', { status: 'Warte auf Verbindung... (bis zu 30s)', percent: 80 })
 
-      // Warte bis Openclaw-Server erreichbar ist (max 30s)
       for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 2000))
         try {
           const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
           if (res.ok) {
-            mainWindow.webContents.send('openclaw:install-progress', { status: 'OpenClaw bereit!', percent: 100 })
+            win().webContents.send('openclaw:install-progress', { status: 'OpenClaw bereit!', percent: 100 })
             return { success: true }
           }
         } catch { /* noch nicht bereit */ }
@@ -327,18 +301,15 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     }
   })
 
-  // OpenClaw im Hintergrund starten (ohne neu installieren)
   ipcMain.handle('openclaw:start', async () => {
     try {
       if (process.platform === 'win32') {
         const child = exec('start /B ollama launch openclaw', { windowsHide: true })
         child.unref()
       } else {
-        // macOS/Linux: openclaw direkt starten
         const child = exec('openclaw &')
         child.unref()
       }
-      // Kurz warten dann Status prüfen
       for (let i = 0; i < 10; i++) {
         await new Promise(r => setTimeout(r, 2000))
         try {
@@ -394,7 +365,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('ollama:pull-model', async (_event, modelName: string) => {
     try {
       await getOllamaClient().pullModel(modelName, (status, percent) => {
-        mainWindow.webContents.send('ollama:pull-progress', { modelName, status, percent })
+        win().webContents.send('ollama:pull-progress', { modelName, status, percent })
       })
       return { success: true }
     } catch (error) {
@@ -418,12 +389,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     }
     try {
       const destPath = join(tmpdir(), 'OllamaSetup.exe')
-      mainWindow.webContents.send('ollama:install-progress', { status: 'Lade Ollama herunter...', percent: 0 })
+      win().webContents.send('ollama:install-progress', { status: 'Lade Ollama herunter...', percent: 0 })
 
       await new Promise<void>((resolve, reject) => {
         const file = createWriteStream(destPath)
         let downloaded = 0
-        const totalEstimate = 120 * 1024 * 1024 // ~120 MB estimate
+        const totalEstimate = 120 * 1024 * 1024
 
         const doGet = (url: string) => {
           httpsGet(url, (res) => {
@@ -435,7 +406,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
             res.on('data', (chunk: Buffer) => {
               downloaded += chunk.length
               const percent = Math.round((downloaded / total) * 100)
-              mainWindow.webContents.send('ollama:install-progress', {
+              win().webContents.send('ollama:install-progress', {
                 status: `Lade Ollama herunter... ${Math.round(downloaded / 1024 / 1024)} MB`,
                 percent
               })
@@ -448,7 +419,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         doGet('https://ollama.com/download/OllamaSetup.exe')
       })
 
-      mainWindow.webContents.send('ollama:install-progress', { status: 'Installiere Ollama...', percent: 100 })
+      win().webContents.send('ollama:install-progress', { status: 'Installiere Ollama...', percent: 100 })
 
       await new Promise<void>((resolve, reject) => {
         exec(`"${destPath}" /S`, (error) => {
@@ -457,13 +428,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         })
       })
 
-      // Wait up to 30s for Ollama to start
       for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 2000))
         try {
           const res = await fetch('http://127.0.0.1:11434/api/version', { signal: AbortSignal.timeout(2000) })
           if (res.ok) {
-            mainWindow.webContents.send('ollama:install-progress', { status: 'Ollama erfolgreich installiert!', percent: 100 })
+            win().webContents.send('ollama:install-progress', { status: 'Ollama erfolgreich installiert!', percent: 100 })
             return { success: true }
           }
         } catch { /* still starting */ }
@@ -480,16 +450,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     return { success: true }
   })
 
-  ipcMain.handle('setup:open-anthropic', async () => {
-    await shell.openExternal('https://console.anthropic.com/settings/keys')
-    return { success: true }
-  })
-
-  ipcMain.handle('setup:open-openai', async () => {
-    await shell.openExternal('https://platform.openai.com/api-keys')
-    return { success: true }
-  })
-
   // =====================================================
   // AUTH – Nutzerkonten
   // =====================================================
@@ -499,21 +459,17 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   })
 
   ipcMain.handle('auth:login-google', async () => {
-    // Öffnet gerki.app/login?source=app im Systembrowser
-    // Nach Google Login leitet gerki.app zu gerki-app://auth?token=JWT weiter
     await shell.openExternal('https://gerki.app/login?source=app')
     return { success: true }
   })
 
-  // Remote-first Login: versucht gerki.app API, fällt auf lokale SQLite-Auth zurück (offline)
   ipcMain.handle('auth:login', async (_event, emailOrUsername: string, password: string) => {
     const isEmail = emailOrUsername.includes('@')
 
-    // Dev-Account Bypass (Enterprise, kein Server nötig)
     if (isEmail && isDevAccount(emailOrUsername)) {
       const devUser = loginDevAccount(emailOrUsername, password)
       if (devUser) {
-        cacheUserDirectly(devUser)  // setzt lastVerifiedAt → getEffectivePlan bleibt 'business'
+        cacheUserDirectly(devUser)
         return { success: true, user: devUser }
       }
       return { success: false, error: 'Falsches Dev-Passwort.' }
@@ -531,15 +487,12 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
         return { success: false, error: remote.error }
       }
     }
-    // Lokaler Fallback (Username-Login oder kein Netz)
     return loginUser(emailOrUsername, password)
   })
 
-  // Token beim App-Start prüfen (online verifizieren oder Cache nutzen)
   ipcMain.handle('auth:current-user', async () => {
     const remoteUser = await verifyStoredToken()
     if (remoteUser) return remoteUser
-    // Lokaler Fallback (alte lokale Accounts)
     return getCurrentUser()
   })
 
@@ -558,7 +511,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     return { success: true }
   })
 
-  // Offline-Degradierung Warnung: Gibt Tage bis Ablauf zurück
   ipcMain.handle('plan:offline-warning', () => {
     const lastVerified = getLastVerifiedAt()
     if (!lastVerified) return null
@@ -583,7 +535,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   const WORD_EXTENSIONS = new Set(['.docx'])
 
   ipcMain.handle('chat:pick-file', async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
+    const result = await dialog.showOpenDialog(win(), {
       title: 'Datei an Chat anhängen',
       properties: ['openFile'],
       filters: [
@@ -660,32 +612,6 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   // ── Dokument-Export ─────────────────────────────────────────────────
   ipcMain.handle('document:save', async (_event, content: string, format: 'pdf' | 'docx' | 'txt', suggestedName: string) => {
-    return saveDocument(content, format, suggestedName, mainWindow)
-  })
-
-  // ── Cloud Sync ───────────────────────────────────────────────────────
-  ipcMain.handle('sync:conversations', async () => {
-    return fetchCloudConversations()
-  })
-
-  ipcMain.handle('sync:messages', async (_event, cloudConvId: string) => {
-    return fetchCloudMessages(cloudConvId)
-  })
-
-  ipcMain.handle('sync:usage', async () => {
-    return fetchUsage()
-  })
-
-  ipcMain.handle('sync:flush', async () => {
-    await flushSyncQueue()
-    return { success: true }
-  })
-
-  ipcMain.handle('sync:device-id', () => {
-    return getDeviceId()
-  })
-
-  ipcMain.handle('sync:status', async () => {
-    return getSyncStatus()
+    return saveDocument(content, format, suggestedName, win())
   })
 }

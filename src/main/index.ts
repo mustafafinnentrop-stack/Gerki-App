@@ -89,8 +89,6 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-
-  registerIpcHandlers(mainWindow)
 }
 
 // ── Auto-Updater ──────────────────────────────────────────────────────────
@@ -181,6 +179,10 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  // IPC-Handler einmalig registrieren (nicht in createWindow – würde auf Mac beim
+  // erneuten Öffnen doppelt registriert und crashen)
+  registerIpcHandlers(() => mainWindow)
 
   // Auto-Updater starten (sucht nach Updates auf GitHub Releases)
   setupAutoUpdater()

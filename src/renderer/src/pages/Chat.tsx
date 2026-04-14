@@ -8,7 +8,6 @@ import {
   User,
   Zap,
   FileText,
-  ChevronDown,
   Camera,
   MousePointer,
   Keyboard,
@@ -20,8 +19,6 @@ import {
   Check,
   Paperclip,
   X,
-  Crown,
-  Lock,
   Download
 } from 'lucide-react'
 import type { AgentStep } from '../types/electron'
@@ -73,17 +70,6 @@ const SKILL_COLORS: Record<string, string> = {
   marketing: 'text-pink-400'
 }
 
-// Ollama = alle Pläne. Claude/GPT = Business+ only.
-const MODEL_OPTIONS = [
-  { key: 'ollama', label: '⚡ Lokal (Ollama)', businessOnly: false, description: 'Kostenlos, lokal, privat' },
-  { key: 'claude', label: 'Claude (Anthropic)', businessOnly: true, description: 'Claude 3.5 Sonnet' },
-  { key: 'gpt-4', label: 'GPT-4', businessOnly: true, description: 'OpenAI GPT-4' },
-  { key: 'gpt-3.5', label: 'GPT-3.5', businessOnly: true, description: 'OpenAI GPT-3.5 Turbo' }
-]
-
-const MODEL_LABELS: Record<string, string> = Object.fromEntries(
-  MODEL_OPTIONS.map((m) => [m.key, m.label])
-)
 
 // ── Copy Button ─────────────────────────────────────────────────────────
 
@@ -279,11 +265,7 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
               <Zap size={10} />
               {SKILL_LABELS[message.skill] ?? message.skill}
             </span>
-            {message.model && (
-              <span className="text-xs text-white/20">
-                via {MODEL_LABELS[message.model] ?? message.model}
-              </span>
-            )}
+            <span className="text-xs text-white/20">Lokal · Ollama</span>
           </div>
         )}
       </div>
@@ -373,57 +355,6 @@ function StreamingMessage({ content, agentSteps }: { content: string; agentSteps
   )
 }
 
-// ── Pro Upgrade Modal ────────────────────────────────────────────────────
-
-function ProUpgradeModal({ onClose }: { onClose: () => void }): React.JSX.Element {
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-            <Crown size={20} className="text-yellow-400" />
-          </div>
-          <div>
-            <h3 className="text-white font-semibold">Business-Plan erforderlich</h3>
-            <p className="text-white/40 text-sm">Top-KI-Modelle sind im Business-Plan</p>
-          </div>
-        </div>
-
-        <p className="text-white/60 text-sm mb-5">
-          Mit Gerki Business erhältst du alle 8 Agenten, Claude (Anthropic) und GPT-4 – plus Multi-User und Cloud-Sync.
-        </p>
-
-        <div className="space-y-2 mb-5">
-          {['Alle 8 Agenten inkl. Marketing', 'Claude 3.5 Sonnet & GPT-4', 'KI läuft lokal (Ollama) inklusive', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team', 'Priority Support 24h'].map((f) => (
-            <div key={f} className="flex items-center gap-2 text-sm text-white/70">
-              <CheckCircle2 size={13} className="text-green-400" />
-              {f}
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <button
-            onClick={() => window.open('https://gerki.app/upgrade', '_blank')}
-            className="w-full bg-primary hover:bg-primary/80 text-white font-medium py-2.5 rounded-xl text-sm transition-colors"
-          >
-            Business für 89,90 €/Monat – Jetzt upgraden
-          </button>
-          <button
-            onClick={onClose}
-            className="w-full text-white/40 hover:text-white/60 py-2 text-sm transition-colors"
-          >
-            Weiter mit lokaler KI (kostenlos)
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Main Chat Page ───────────────────────────────────────────────────────
 
 export default function ChatPage({
@@ -441,33 +372,15 @@ export default function ChatPage({
   const liveAgentStepsRef = useRef<AgentStep[]>([]) // Fix: stale closure bug
   const [agentMode, setAgentMode] = useState(false)
   const [currentConvId, setCurrentConvId] = useState<string | null>(conversationId)
-  const [selectedModel, setSelectedModel] = useState<string>('ollama')
-  const [showModelPicker, setShowModelPicker] = useState(false)
-  const [showProModal, setShowProModal] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const [uploadingFile, setUploadingFile] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const isPro = userPlan === 'business'
-
   // Sync external conversationId
   useEffect(() => {
     setCurrentConvId(conversationId)
   }, [conversationId])
-
-  // Load model preference (aber erzwinge Ollama für Free-User falls nötig)
-  useEffect(() => {
-    window.gerki.settings.get().then((s) => {
-      const preferred = s.preferred_model ?? 'ollama'
-      const modelOption = MODEL_OPTIONS.find((m) => m.key === preferred)
-      if (modelOption?.businessOnly && !isPro) {
-        setSelectedModel('ollama')
-      } else {
-        setSelectedModel(preferred)
-      }
-    })
-  }, [isPro])
 
   // Load history when conversation changes
   useEffect(() => {
@@ -581,7 +494,7 @@ export default function ChatPage({
       const result = await window.gerki.chat.send({
         userMessage: fullMessage,
         conversationId: currentConvId ?? undefined,
-        model: selectedModel,
+        model: 'ollama',
         agentMode,
         forceSkill: forceSkill ?? undefined
       })
@@ -626,7 +539,7 @@ export default function ChatPage({
     } finally {
       setIsLoading(false)
     }
-  }, [input, attachedFiles, isLoading, currentConvId, selectedModel, agentMode, onConversationCreated, onConversationsChanged])
+  }, [input, attachedFiles, isLoading, currentConvId, agentMode, onConversationCreated, onConversationsChanged])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -642,24 +555,10 @@ export default function ChatPage({
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }
 
-  const handleModelSelect = (key: string) => {
-    const option = MODEL_OPTIONS.find((m) => m.key === key)
-    if (option?.businessOnly && !isPro) {
-      setShowModelPicker(false)
-      setShowProModal(true)
-      return
-    }
-    setSelectedModel(key)
-    window.gerki.settings.setModel(key)
-    setShowModelPicker(false)
-  }
-
   const isEmpty = messages.length === 0 && !streamingContent
 
   return (
     <div className="flex flex-col h-screen">
-      {showProModal && <ProUpgradeModal onClose={() => setShowProModal(false)} />}
-
       {/* Agent-Badge wenn ein Skill erzwungen ist */}
       {forceSkill && forceSkill !== 'general' && (
         <div className={`flex items-center gap-2 px-4 py-2 border-b border-white/5 ${SKILL_COLORS[forceSkill] ?? 'text-white/40'}`}>
@@ -682,15 +581,6 @@ export default function ChatPage({
             Dein Assistent für Recht, Buchhaltung, Behördenpost & mehr.
             Schreib einfach los.
           </p>
-
-          {!isPro && (
-            <div className="mt-4 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2.5">
-              <Zap size={14} className="text-yellow-400" />
-              <span className="text-yellow-400 text-sm">
-                KI läuft lokal · <button onClick={() => setShowProModal(true)} className="underline hover:no-underline">Upgrade auf Business für Claude & GPT-4</button>
-              </span>
-            </div>
-          )}
 
           {/* Quick starts */}
           <div className="mt-6 grid grid-cols-2 gap-3 max-w-lg w-full">
@@ -796,21 +686,15 @@ export default function ChatPage({
           />
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Agent Mode Toggle – nur sinnvoll mit Claude + Openclaw */}
+            {/* Agent Mode Toggle – Desktop-Automatisierung via Openclaw */}
             <button
               onClick={() => setAgentMode(!agentMode)}
-              title={
-                selectedModel !== 'claude'
-                  ? 'Desktop-Agent: Nur mit Claude verfügbar. Modell wechseln.'
-                  : agentMode
-                  ? 'Desktop-Agent aktiv – Gerki kann deinen Bildschirm steuern (braucht Openclaw)'
-                  : 'Desktop-Agent aktivieren (braucht Claude + Openclaw)'
-              }
+              title={agentMode
+                ? 'Desktop-Agent aktiv – Gerki kann deinen Bildschirm steuern (braucht Openclaw)'
+                : 'Desktop-Agent aktivieren (braucht Openclaw)'}
               className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors ${
-                agentMode && selectedModel === 'claude'
+                agentMode
                   ? 'bg-accent/20 text-accent border border-accent/30'
-                  : selectedModel !== 'claude'
-                  ? 'text-white/10 cursor-not-allowed'
                   : 'text-white/20 hover:text-white/50'
               }`}
             >
@@ -818,43 +702,8 @@ export default function ChatPage({
               Desktop-Agent
             </button>
 
-            {/* Model picker */}
-            <div className="relative">
-              <button
-                onClick={() => setShowModelPicker(!showModelPicker)}
-                className="flex items-center gap-1 text-xs text-white/30 hover:text-white/60 transition-colors py-1"
-              >
-                {MODEL_LABELS[selectedModel] ?? selectedModel}
-                <ChevronDown size={12} />
-              </button>
-              {showModelPicker && (
-                <div className="absolute bottom-full right-0 mb-2 bg-surface border border-white/10 rounded-xl overflow-hidden shadow-xl min-w-[200px]">
-                  {MODEL_OPTIONS.map((option) => {
-                    const isLocked = option.businessOnly && !isPro
-                    return (
-                      <button
-                        key={option.key}
-                        onClick={() => handleModelSelect(option.key)}
-                        className={`w-full px-4 py-2.5 text-sm text-left hover:bg-white/5 transition-colors flex items-center justify-between gap-3 ${
-                          selectedModel === option.key ? 'text-primary' : isLocked ? 'text-white/30' : 'text-white/60'
-                        }`}
-                      >
-                        <div>
-                          <div className={isLocked ? 'text-white/30' : ''}>{option.label}</div>
-                          <div className="text-xs text-white/20">{option.description}</div>
-                        </div>
-                        {isLocked ? (
-                          <div className="flex items-center gap-1">
-                            <Lock size={10} className="text-yellow-500/60" />
-                            <span className="text-xs text-yellow-500/60 font-medium">Business</span>
-                          </div>
-                        ) : null}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            {/* Modell-Anzeige (immer lokal) */}
+            <span className="text-xs text-white/20 py-1">⚡ Lokal (Ollama)</span>
 
             {/* Send button */}
             <button
