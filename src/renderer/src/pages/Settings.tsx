@@ -1,18 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, Key, CheckCircle, AlertCircle, Loader2, Monitor, RefreshCw, Cpu, Download, ArrowUpCircle } from 'lucide-react'
-
-interface SettingsData {
-  claude_api_key?: string
-  openai_api_key?: string
-  preferred_model?: string
-  openclaw_url?: string
-  ollama_model?: string
-}
-
-interface OpenclawStatus {
-  connected: boolean
-  url: string
-}
+import { Settings, CheckCircle, Loader2, Monitor, RefreshCw, Cpu, Download, ArrowUpCircle, Shield } from 'lucide-react'
 
 interface OllamaModelInfo { name: string; size: number }
 interface OllamaAvailableModel { id: string; name: string; description: string; size: string; minRam: string; license: string }
@@ -24,24 +11,16 @@ interface OllamaStatus {
   availableModels: OllamaAvailableModel[]
 }
 
-interface SettingsPageProps {
-  userPlan?: 'trial' | 'standard' | 'pro' | 'business' | 'expired'
+interface OpenclawStatus {
+  connected: boolean
+  url: string
 }
 
-export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
-  const [settings, setSettings] = useState<SettingsData>({})
-  const [claudeKey, setClaudeKey] = useState('')
-  const [openaiKey, setOpenaiKey] = useState('')
+export default function SettingsPage(): React.JSX.Element {
   const [openclawUrl, setOpenclawUrl] = useState('http://127.0.0.1:8765')
   const [openclawStatus, setOpenclawStatus] = useState<OpenclawStatus | null>(null)
   const [savingOpenclawUrl, setSavingOpenclawUrl] = useState(false)
   const [openclawUrlSaved, setOpenclawUrlSaved] = useState(false)
-  const [savingClaude, setSavingClaude] = useState(false)
-  const [savingOpenai, setSavingOpenai] = useState(false)
-  const [claudeSaved, setClaudeSaved] = useState(false)
-  const [openaiSaved, setOpenaiSaved] = useState(false)
-  const [claudeError, setClaudeError] = useState('')
-  const [openaiError, setOpenaiError] = useState('')
   const [checkingOpenclaw, setCheckingOpenclaw] = useState(false)
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
   const [pullingModel, setPullingModel] = useState<string | null>(null)
@@ -49,26 +28,20 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
   const [appVersion, setAppVersion] = useState<string>('')
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'error'>('idle')
-  const [syncStatus, setSyncStatus] = useState<{ loggedIn: boolean; deviceId: string; queueSize: number; testResult?: string } | null>(null)
-  const [checkingSync, setCheckingSync] = useState(false)
 
   useEffect(() => {
     window.gerki.settings.get().then((s) => {
-      setSettings(s)
       if (s.openclaw_url) setOpenclawUrl(s.openclaw_url)
     })
     checkOpenclawStatus()
     checkOllamaStatus()
 
-    // App-Version laden
     window.gerki.appInfo?.getVersion().then((v) => setAppVersion(v ?? ''))
 
-    // Update-Events
     const unsubAvailable = window.gerki.on('app:update-available', () => setUpdateStatus('available'))
     const unsubNotAvail = window.gerki.on('app:update-not-available', () => setUpdateStatus('up-to-date'))
     const unsubError = window.gerki.on('app:update-error', () => setUpdateStatus('error'))
 
-    // Ollama Pull-Progress Events
     const unsubPull = window.gerki.on('ollama:pull-progress', (data: unknown) => {
       const d = data as { status: string; percent?: number }
       setPullProgress(d.percent ? `${d.status} (${d.percent}%)` : d.status)
@@ -76,24 +49,15 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
     return () => { unsubAvailable(); unsubNotAvail(); unsubError(); unsubPull() }
   }, [])
 
-  const checkSyncStatus = async () => {
-    setCheckingSync(true)
-    const status = await (window.gerki as { sync?: { status: () => Promise<unknown> } }).sync?.status()
-    setSyncStatus(status as typeof syncStatus)
-    setCheckingSync(false)
-  }
-
   const checkForUpdates = async () => {
     setCheckingUpdate(true)
     setUpdateStatus('checking')
     const result = await window.gerki.appInfo?.checkForUpdates()
     setCheckingUpdate(false)
-    // Wenn der Handler einen Fehler zurückgibt (z.B. Dev-Modus)
     if (result && !result.success) {
       setUpdateStatus('up-to-date')
       return
     }
-    // Fallback: nach 10s auf up-to-date setzen falls kein Event kommt
     setTimeout(() => setUpdateStatus((prev) => prev === 'checking' ? 'up-to-date' : prev), 10000)
   }
 
@@ -119,23 +83,6 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
     await window.gerki.ollama.setModel(modelId)
   }
 
-  const saveClaudeKey = async () => {
-    if (!claudeKey.trim()) return
-    setSavingClaude(true)
-    setClaudeError('')
-    const result = await window.gerki.settings.saveApiKey('claude', claudeKey)
-    setSavingClaude(false)
-    if (result.success) {
-      setClaudeKey('')
-      setClaudeSaved(true)
-      setTimeout(() => setClaudeSaved(false), 3000)
-      const s = await window.gerki.settings.get()
-      setSettings(s)
-    } else {
-      setClaudeError(result.error ?? 'Fehler beim Speichern')
-    }
-  }
-
   const saveOpenclawUrl = async () => {
     if (!openclawUrl.trim()) return
     setSavingOpenclawUrl(true)
@@ -144,23 +91,6 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
     setOpenclawUrlSaved(true)
     setTimeout(() => setOpenclawUrlSaved(false), 3000)
     await checkOpenclawStatus()
-  }
-
-  const saveOpenaiKey = async () => {
-    if (!openaiKey.trim()) return
-    setSavingOpenai(true)
-    setOpenaiError('')
-    const result = await window.gerki.settings.saveApiKey('openai', openaiKey)
-    setSavingOpenai(false)
-    if (result.success) {
-      setOpenaiKey('')
-      setOpenaiSaved(true)
-      setTimeout(() => setOpenaiSaved(false), 3000)
-      const s = await window.gerki.settings.get()
-      setSettings(s)
-    } else {
-      setOpenaiError(result.error ?? 'Fehler beim Speichern')
-    }
   }
 
   return (
@@ -172,159 +102,20 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
             <Settings size={20} className="text-primary" />
             <h1 className="text-xl font-semibold text-white">Einstellungen</h1>
           </div>
-          <p className="text-sm text-white/40">API-Schlüssel und Verbindungen konfigurieren</p>
+          <p className="text-sm text-white/40">Lokale KI und Verbindungen konfigurieren</p>
         </div>
 
-        {/* Claude API Key */}
-        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Key size={16} className="text-[#CC785C]" />
-            <h2 className="text-sm font-medium text-white">Anthropic Claude</h2>
-            {settings.claude_api_key && (
-              <span className="ml-auto text-xs text-white/30">{settings.claude_api_key}</span>
-            )}
-          </div>
-          <p className="text-xs text-white/40 mb-4">
-            Für Claude Sonnet und Haiku. API-Key unter console.anthropic.com
-          </p>
-
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={claudeKey}
-              onChange={(e) => setClaudeKey(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && saveClaudeKey()}
-              placeholder={settings.claude_api_key ? 'Neuen Key eingeben...' : 'sk-ant-...'}
-              className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-primary/50 transition-colors"
-            />
-            <button
-              onClick={saveClaudeKey}
-              disabled={!claudeKey.trim() || savingClaude}
-              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
-            >
-              {savingClaude ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : claudeSaved ? (
-                <CheckCircle size={14} className="text-green-400" />
-              ) : (
-                'Speichern'
-              )}
-            </button>
-          </div>
-          {claudeError && (
-            <p className="flex items-center gap-1 text-xs text-red-400 mt-2">
-              <AlertCircle size={12} /> {claudeError}
-            </p>
-          )}
-        </section>
-
-        {/* OpenAI API Key */}
-        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Key size={16} className="text-green-400" />
-            <h2 className="text-sm font-medium text-white">OpenAI ChatGPT</h2>
-            {settings.openai_api_key && (
-              <span className="ml-auto text-xs text-white/30">{settings.openai_api_key}</span>
-            )}
-          </div>
-          <p className="text-xs text-white/40 mb-4">
-            Für GPT-4 und GPT-3.5. API-Key unter platform.openai.com
-          </p>
-
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={openaiKey}
-              onChange={(e) => setOpenaiKey(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && saveOpenaiKey()}
-              placeholder={settings.openai_api_key ? 'Neuen Key eingeben...' : 'sk-...'}
-              className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-white/20 outline-none focus:border-primary/50 transition-colors"
-            />
-            <button
-              onClick={saveOpenaiKey}
-              disabled={!openaiKey.trim() || savingOpenai}
-              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
-            >
-              {savingOpenai ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : openaiSaved ? (
-                <CheckCircle size={14} className="text-green-400" />
-              ) : (
-                'Speichern'
-              )}
-            </button>
-          </div>
-          {openaiError && (
-            <p className="flex items-center gap-1 text-xs text-red-400 mt-2">
-              <AlertCircle size={12} /> {openaiError}
-            </p>
-          )}
-        </section>
-
-        {/* Openclaw Status */}
-        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Monitor size={16} className="text-accent" />
-            <h2 className="text-sm font-medium text-white">Openclaw Desktop-Automation</h2>
-          </div>
-          <p className="text-xs text-white/40 mb-4">
-            Desktop-Automatisierung: Klicken, Tippen, Screenshots, Formular-Ausfüllung.
-            Openclaw muss separat installiert sein.
-          </p>
-
-          <div className="flex items-center gap-3 mb-3">
-            {openclawStatus ? (
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    openclawStatus.connected ? 'bg-green-400' : 'bg-red-400'
-                  }`}
-                />
-                <span className="text-sm text-white/60">
-                  {openclawStatus.connected ? 'Verbunden' : 'Nicht verbunden'}
-                </span>
-                <span className="text-xs text-white/30">{openclawStatus.url}</span>
-              </div>
-            ) : (
-              <span className="text-sm text-white/30">Wird geprüft...</span>
-            )}
-
-            <button
-              onClick={checkOpenclawStatus}
-              disabled={checkingOpenclaw}
-              className="ml-auto p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
-              title="Status prüfen"
-            >
-              <RefreshCw size={14} className={checkingOpenclaw ? 'animate-spin' : ''} />
-            </button>
-          </div>
-
+        {/* Datenschutz-Badge */}
+        <div className="mb-6 p-4 rounded-xl bg-green-500/5 border border-green-500/20 flex items-start gap-3">
+          <Shield size={16} className="text-green-400 mt-0.5 shrink-0" />
           <div>
-            <label className="block text-xs text-white/30 mb-1.5">Openclaw URL</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={openclawUrl}
-                onChange={(e) => setOpenclawUrl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveOpenclawUrl()}
-                className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50 transition-colors"
-              />
-              <button
-                onClick={saveOpenclawUrl}
-                disabled={savingOpenclawUrl}
-                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
-              >
-                {savingOpenclawUrl ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : openclawUrlSaved ? (
-                  <CheckCircle size={14} className="text-green-400" />
-                ) : (
-                  'Speichern'
-                )}
-              </button>
-            </div>
+            <p className="text-sm font-medium text-green-400">100% lokal – DSGVO-konform</p>
+            <p className="text-xs text-white/40 mt-0.5">
+              Alle Chats, Dokumente und Erinnerungen bleiben ausschließlich auf diesem Rechner.
+              Keine Cloud, keine externen KI-Server.
+            </p>
           </div>
-        </section>
+        </div>
 
         {/* Ollama – Lokale KI */}
         <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
@@ -410,53 +201,73 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
           )}
         </section>
 
-        {/* Cloud-Sync Status */}
-        <section>
-          <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Cloud-Sync</h2>
-          <div className="p-4 rounded-xl bg-surface border border-white/5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-white/80 font-medium">Gerki Cloud</p>
-                <p className="text-xs text-white/40 mt-0.5">Synchronisiert Chats mit gerki.app</p>
+        {/* Openclaw Desktop-Automation */}
+        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
+          <div className="flex items-center gap-2 mb-1">
+            <Monitor size={16} className="text-accent" />
+            <h2 className="text-sm font-medium text-white">Openclaw Desktop-Automation</h2>
+          </div>
+          <p className="text-xs text-white/40 mb-4">
+            Desktop-Automatisierung: Klicken, Tippen, Screenshots, Formular-Ausfüllung.
+            Openclaw muss separat installiert sein.
+          </p>
+
+          <div className="flex items-center gap-3 mb-3">
+            {openclawStatus ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    openclawStatus.connected ? 'bg-green-400' : 'bg-red-400'
+                  }`}
+                />
+                <span className="text-sm text-white/60">
+                  {openclawStatus.connected ? 'Verbunden' : 'Nicht verbunden'}
+                </span>
+                <span className="text-xs text-white/30">{openclawStatus.url}</span>
               </div>
+            ) : (
+              <span className="text-sm text-white/30">Wird geprüft...</span>
+            )}
+
+            <button
+              onClick={checkOpenclawStatus}
+              disabled={checkingOpenclaw}
+              className="ml-auto p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
+              title="Status prüfen"
+            >
+              <RefreshCw size={14} className={checkingOpenclaw ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-xs text-white/30 mb-1.5">Openclaw URL</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={openclawUrl}
+                onChange={(e) => setOpenclawUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && saveOpenclawUrl()}
+                className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50 transition-colors"
+              />
               <button
-                onClick={checkSyncStatus}
-                disabled={checkingSync}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white/60 text-xs hover:bg-white/10 transition-colors disabled:opacity-50"
+                onClick={saveOpenclawUrl}
+                disabled={savingOpenclawUrl}
+                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
               >
-                {checkingSync ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                Status prüfen
+                {savingOpenclawUrl ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : openclawUrlSaved ? (
+                  <CheckCircle size={14} className="text-green-400" />
+                ) : (
+                  'Speichern'
+                )}
               </button>
             </div>
-            {syncStatus && (
-              <div className="text-xs space-y-1 pt-2 border-t border-white/5">
-                <div className="flex justify-between text-white/50">
-                  <span>Angemeldet</span>
-                  <span className={syncStatus.loggedIn ? 'text-green-400' : 'text-red-400'}>
-                    {syncStatus.loggedIn ? 'Ja ✓' : 'Nein – bitte neu einloggen'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-white/50">
-                  <span>Gerät-ID</span>
-                  <span className="font-mono text-white/40">{syncStatus.deviceId}</span>
-                </div>
-                <div className="flex justify-between text-white/50">
-                  <span>Offline-Queue</span>
-                  <span>{syncStatus.queueSize} ausstehend</span>
-                </div>
-                <div className="flex justify-between text-white/50">
-                  <span>API-Test</span>
-                  <span className={syncStatus.testResult?.startsWith('OK') ? 'text-green-400' : 'text-red-400'}>
-                    {syncStatus.testResult}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </section>
 
-        {/* Updates */}
-        <section>
+        {/* App-Updates */}
+        <section className="mb-6">
           <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">App-Updates</h2>
           <div className="p-4 rounded-xl bg-surface border border-white/5 flex items-center justify-between gap-4">
             <div>
@@ -480,14 +291,6 @@ export default function SettingsPage({}: SettingsPageProps): React.JSX.Element {
           </div>
         </section>
 
-        {/* Info box */}
-        <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
-          <p className="text-xs text-white/40">
-            <span className="text-primary font-medium">Datenschutz:</span>{' '}
-            Alle Daten – Memory, Gespräche, Dateien – bleiben ausschließlich auf deinem PC.
-            API-Keys werden nur lokal in der SQLite-Datenbank gespeichert.
-          </p>
-        </div>
       </div>
     </div>
   )

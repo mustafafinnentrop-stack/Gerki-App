@@ -1,6 +1,9 @@
 /**
  * Preload Script – contextBridge zwischen Electron und React-UI
  * Legt die sichere window.gerki API an.
+ *
+ * Lokal-first, DSGVO-konform:
+ * Keine Cloud-Sync, keine externen KI-APIs in der Bridge.
  */
 
 import { contextBridge, ipcRenderer } from 'electron'
@@ -16,10 +19,7 @@ const gerki = {
 
   // ── Settings ──────────────────────────────────────────────────────
   settings: {
-    get: () => ipcRenderer.invoke('settings:get'),
-    saveApiKey: (provider: 'claude' | 'openai', key: string) =>
-      ipcRenderer.invoke('settings:save-api-key', provider, key),
-    setModel: (model: string) => ipcRenderer.invoke('settings:set-model', model)
+    get: () => ipcRenderer.invoke('settings:get')
   },
 
   // ── Dateisystem ───────────────────────────────────────────────────
@@ -72,9 +72,7 @@ const gerki = {
   setup: {
     isComplete: () => ipcRenderer.invoke('setup:is-complete'),
     markComplete: () => ipcRenderer.invoke('setup:mark-complete'),
-    openRegister: () => ipcRenderer.invoke('setup:open-register'),
-    openAnthropic: () => ipcRenderer.invoke('setup:open-anthropic'),
-    openOpenai: () => ipcRenderer.invoke('setup:open-openai')
+    openRegister: () => ipcRenderer.invoke('setup:open-register')
   },
 
   // ── Auth ──────────────────────────────────────────────────────────
@@ -113,16 +111,6 @@ const gerki = {
   appInfo: {
     checkForUpdates: () => ipcRenderer.invoke('app:check-for-updates'),
     getVersion: () => ipcRenderer.invoke('app:get-version')
-  },
-
-  // ── Cloud Sync ────────────────────────────────────────────────────
-  sync: {
-    conversations: () => ipcRenderer.invoke('sync:conversations'),
-    messages: (cloudConvId: string) => ipcRenderer.invoke('sync:messages', cloudConvId),
-    usage: () => ipcRenderer.invoke('sync:usage'),
-    flush: () => ipcRenderer.invoke('sync:flush'),
-    deviceId: () => ipcRenderer.invoke('sync:device-id'),
-    status: () => ipcRenderer.invoke('sync:status')
   },
 
   // ── Events ────────────────────────────────────────────────────────
