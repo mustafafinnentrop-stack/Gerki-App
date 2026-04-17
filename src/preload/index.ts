@@ -46,18 +46,6 @@ const gerki = {
     toggle: (slug: string, active: boolean) => ipcRenderer.invoke('skills:toggle', slug, active)
   },
 
-  // ── Openclaw ──────────────────────────────────────────────────────
-  openclaw: {
-    status: () => ipcRenderer.invoke('openclaw:status'),
-    action: (action: { type: string; payload?: unknown }) =>
-      ipcRenderer.invoke('openclaw:action', action),
-    screenshot: () => ipcRenderer.invoke('openclaw:screenshot'),
-    setUrl: (url: string) => ipcRenderer.invoke('openclaw:set-url', url),
-    openDownload: () => ipcRenderer.invoke('openclaw:open-download'),
-    installAuto: () => ipcRenderer.invoke('openclaw:install-auto'),
-    start: () => ipcRenderer.invoke('openclaw:start')
-  },
-
   // ── Ollama (lokale KI) ────────────────────────────────────────────
   ollama: {
     status: () => ipcRenderer.invoke('ollama:status'),

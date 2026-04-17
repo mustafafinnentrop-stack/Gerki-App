@@ -25,7 +25,6 @@ export type SkillTool =
   | 'email_draft'
   | 'pdf_export'
   | 'web_search'
-  | 'openclaw_action'
 
 // =====================================================
 // SKILL DEFINITIONEN

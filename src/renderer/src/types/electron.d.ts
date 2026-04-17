@@ -1,17 +1,5 @@
 export {}
 
-// ── Agentic Step (Openclaw-Aktionen in der UI anzeigen) ───────────────
-export interface AgentStep {
-  type: 'tool_call' | 'tool_result' | 'screenshot' | 'error' | 'thinking'
-  tool?: string
-  label?: string
-  input?: Record<string, unknown>
-  result?: string
-  image?: string     // Base64 PNG
-  error?: string
-  iteration?: number
-}
-
 declare global {
   interface Window {
     gerki: {
@@ -22,7 +10,6 @@ declare global {
           conversationId?: string
           model?: string
           forceSkill?: string
-          agentMode?: boolean
         }) => Promise<{
           success: boolean
           data?: {
@@ -60,8 +47,6 @@ declare global {
       // ── Settings ──────────────────────────────────────────────────
       settings: {
         get: () => Promise<Record<string, string>>
-        saveApiKey: (provider: 'claude' | 'openai', key: string) => Promise<{ success: boolean; error?: string }>
-        setModel: (model: string) => Promise<{ success: boolean }>
       }
 
       // ── Dateisystem ───────────────────────────────────────────────
@@ -112,17 +97,6 @@ declare global {
         toggle: (slug: string, active: boolean) => Promise<{ success: boolean }>
       }
 
-      // ── Openclaw ──────────────────────────────────────────────────
-      openclaw: {
-        status: () => Promise<{ connected: boolean; url: string; version: string | null }>
-        action: (action: { type: string; payload?: unknown }) => Promise<unknown>
-        screenshot: () => Promise<{ success: boolean; image?: string; width?: number; height?: number; error?: string }>
-        setUrl: (url: string) => Promise<{ success: boolean }>
-        openDownload: () => Promise<{ success: boolean; url: string }>
-        installAuto: () => Promise<{ success: boolean; error?: string }>
-        start: () => Promise<{ success: boolean; error?: string }>
-      }
-
       // ── Ollama (lokale KI) ────────────────────────────────────────
       ollama: {
         status: () => Promise<{
@@ -152,8 +126,6 @@ declare global {
         isComplete: () => Promise<{ complete: boolean }>
         markComplete: () => Promise<{ success: boolean }>
         openRegister: () => Promise<{ success: boolean }>
-        openAnthropic: () => Promise<{ success: boolean }>
-        openOpenai: () => Promise<{ success: boolean }>
       }
 
       // ── Auth ──────────────────────────────────────────────────────
@@ -163,9 +135,7 @@ declare global {
           user?: { id: string; username: string; email: string; plan: string; created_at: string }
           error?: string
         }>
-        /** Öffnet gerki.app/login?source=app im Browser für Google OAuth */
         loginWithGoogle: () => Promise<{ success: boolean }>
-        /** Remote-first Login: versucht gerki.app API, fällt auf lokale Auth zurück (offline) */
         login: (emailOrUsername: string, password: string) => Promise<{
           success: boolean
           user?: { id: string; username: string; email: string; plan: string; created_at: string }
@@ -204,21 +174,6 @@ declare global {
       appInfo?: {
         checkForUpdates: () => Promise<{ success: boolean; error?: string }>
         getVersion: () => Promise<string>
-      }
-
-      // ── Cloud Sync ────────────────────────────────────────────────
-      sync: {
-        conversations: () => Promise<Array<{
-          id: string; title: string; agentType: string; deviceId: string; updatedAt: string
-        }>>
-        messages: (cloudConvId: string) => Promise<Array<{
-          id: string; role: string; content: string; createdAt: string
-        }>>
-        usage: () => Promise<{
-          plan: string; used: number; limit: number; remaining: number; percent: number; month: string
-        } | null>
-        flush: () => Promise<{ success: boolean }>
-        deviceId: () => Promise<string>
       }
 
       // ── Plan Enforcement ──────────────────────────────────────────

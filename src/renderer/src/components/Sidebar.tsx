@@ -7,7 +7,6 @@ import {
   FolderOpen,
   Puzzle,
   Plus,
-  Bot,
   User,
   Crown
 } from 'lucide-react'
@@ -88,8 +87,13 @@ export default function Sidebar({
       {/* Logo / Header */}
       <div className="drag-region h-12 flex items-center pl-[76px] pr-4 border-b border-white/5">
         <div className="no-drag flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Bot size={16} className="text-white" />
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center overflow-hidden">
+            <svg viewBox="0 0 28 28" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="14" cy="14" rx="10.5" ry="3.8" fill="none" stroke="white" strokeWidth="1.4" opacity="0.9"/>
+              <ellipse cx="14" cy="14" rx="10.5" ry="3.8" fill="none" stroke="white" strokeWidth="1.4" opacity="0.75" transform="rotate(60 14 14)"/>
+              <ellipse cx="14" cy="14" rx="10.5" ry="3.8" fill="none" stroke="white" strokeWidth="1.4" opacity="0.75" transform="rotate(-60 14 14)"/>
+              <circle cx="14" cy="14" r="2.2" fill="white" opacity="0.95"/>
+            </svg>
           </div>
           <span className="font-semibold text-white">Gerki</span>
         </div>
