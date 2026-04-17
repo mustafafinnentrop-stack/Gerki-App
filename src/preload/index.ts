@@ -101,6 +101,22 @@ const gerki = {
     getVersion: () => ipcRenderer.invoke('app:get-version')
   },
 
+  // ── Datei-Operationen (Phase 1 – mit Bestätigungsdialog) ──────────
+  fs: {
+    createFolder: (path: string) => ipcRenderer.invoke('fs:create-folder', path),
+    move: (from: string, to: string) => ipcRenderer.invoke('fs:move', from, to),
+    rename: (from: string, newName: string) => ipcRenderer.invoke('fs:rename', from, newName),
+    delete: (path: string) => ipcRenderer.invoke('fs:delete', path),
+    write: (path: string, content: string) => ipcRenderer.invoke('fs:write', path, content)
+  },
+
+  // ── Connectors (Phase 2 – Cloud-Storage) ──────────────────────────
+  connectors: {
+    list: () => ipcRenderer.invoke('connectors:list'),
+    connect: (id: string) => ipcRenderer.invoke('connectors:connect', id),
+    disconnect: (id: string) => ipcRenderer.invoke('connectors:disconnect', id)
+  },
+
   // ── Events ────────────────────────────────────────────────────────
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => callback(...args)

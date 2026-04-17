@@ -19,6 +19,8 @@ import { searchFiles, getIndexStats } from './fileIndexer'
 import { getOllamaClient, DEFAULT_OLLAMA_MODEL } from './ollamaClient'
 import { checkAccess, getEffectivePlan } from './planEnforcement'
 import { getCachedUser, getLastVerifiedAt } from './remoteAuth'
+import { getAllConnectors } from './connectors/base'
+import { homedir, platform } from 'os'
 import { v4 as uuidv4 } from 'uuid'
 
 export type AIModel = 'ollama'
@@ -179,13 +181,46 @@ export async function processMessage(
   }
 
   // 4. System-Prompt zusammenbauen
+  const plat = platform()
+  const home = homedir()
+  const osLabel = plat === 'darwin' ? 'macOS' : plat === 'win32' ? 'Windows' : 'Linux'
+
+  const connectors = getAllConnectors()
+  const connected = connectors.filter((c) => c.status === 'connected')
+  const connectorsLine =
+    connected.length > 0
+      ? `Verbundene Cloud-Dienste: ${connected.map((c) => c.name).join(', ')}`
+      : 'Keine Cloud-Dienste verbunden (Nutzer kann sie in Einstellungen → Konnektoren aktivieren).'
+
   const honestyDirective = `
-WICHTIG – Was Gerki NICHT kann (niemals behaupten):
-- Gerki kann KEINE neuen Ordner erstellen, Dateien verschieben, umbenennen oder löschen
-- Gerki kann NICHT auf Google Drive, OneDrive, iCloud oder andere Cloud-Dienste zugreifen
-- Gerki kann AUSSCHLIESSLICH Dateien in den vom Nutzer explizit freigegebenen Ordnern LESEN und durchsuchen
-- Erfinde NIEMALS Dateistrukturen, Ordner oder Dateien die du "erstellt" hast – das wäre eine Lüge
-- Wenn der Nutzer möchte dass du Dateien organisierst: Sage ehrlich "Ich kann keine Ordner anlegen oder Dateien verschieben", und biete stattdessen eine Schritt-für-Schritt-Anleitung für den Nutzer oder erstelle ein Exportdokument (↓) mit der gewünschten Struktur.
+
+SYSTEM-KONTEXT:
+- Betriebssystem: ${osLabel}
+- Home-Verzeichnis des Nutzers: ${home}
+- ${connectorsLine}
+
+GERKI-AKTIONEN (du hast Schreibrechte – aber der Nutzer muss jede Aktion bestätigen):
+Du KANNST Ordner anlegen, Dateien verschieben, umbenennen, löschen oder schreiben – indem du einen Aktions-Block in deine Antwort einfügst. Jede Aktion zeigt einen Bestätigungs-Dialog, bevor sie ausgeführt wird.
+
+Format (als Markdown-Codeblock mit Sprache "gerki-action"):
+
+\`\`\`gerki-action
+{"tool":"create_folder","path":"${home}/Steuern"}
+\`\`\`
+
+Verfügbare Tools:
+- create_folder: {"tool":"create_folder","path":"<absoluter Pfad>"}
+- move: {"tool":"move","from":"<quelle>","to":"<ziel>"}
+- rename: {"tool":"rename","from":"<pfad>","newName":"<neuer-name>"}
+- delete: {"tool":"delete","path":"<pfad>"}  (destruktiv!)
+- write: {"tool":"write","path":"<pfad>","content":"<inhalt>"}
+
+Regeln:
+- Immer ABSOLUTE Pfade verwenden (beginnend mit ${home})
+- Kündige die Aktion in normaler Sprache an, DANN den Aktions-Block
+- Führe die Aktion NICHT in deinem Fließtext als "erledigt" dar – der Nutzer muss erst klicken
+- Erfinde niemals Dateistrukturen, die du gar nicht angelegt hast
+- Cloud-Zugriff (Google Drive/OneDrive) nur wenn ${connected.length > 0 ? 'verbunden' : 'vom Nutzer verbunden – aktuell nichts verbunden'}
 `
 
   const systemPrompt = [

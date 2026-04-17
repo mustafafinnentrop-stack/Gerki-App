@@ -181,6 +181,29 @@ declare global {
         offlineWarning: () => Promise<{ daysRemaining: number; warn: boolean } | null>
       }
 
+      // ── Datei-Operationen (Phase 1 – mit Bestätigungsdialog) ──────
+      fs: {
+        createFolder: (path: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        move: (from: string, to: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        rename: (from: string, newName: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        delete: (path: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        write: (path: string, content: string) => Promise<{ success: boolean; path?: string; error?: string }>
+      }
+
+      // ── Connectors (Phase 2 – Cloud-Storage) ──────────────────────
+      connectors: {
+        list: () => Promise<Array<{
+          id: 'google-drive' | 'onedrive' | 'dropbox'
+          name: string
+          description: string
+          status: 'not-configured' | 'disconnected' | 'connected' | 'error'
+          accountLabel?: string
+          error?: string
+        }>>
+        connect: (id: string) => Promise<{ success: boolean; error?: string }>
+        disconnect: (id: string) => Promise<{ success: boolean }>
+      }
+
       // ── Events ────────────────────────────────────────────────────
       on: (channel: string, callback: (...args: unknown[]) => void) => () => void
     }

@@ -8,7 +8,8 @@ import {
   Puzzle,
   Plus,
   User,
-  Crown
+  Crown,
+  Plug
 } from 'lucide-react'
 
 interface Conversation {
@@ -41,6 +42,7 @@ const NAV_ITEMS = [
   { id: 'skills', icon: Puzzle, label: 'Skills' },
   { id: 'memory', icon: Brain, label: 'Memory' },
   { id: 'files', icon: FolderOpen, label: 'Dateien' },
+  { id: 'connectors', icon: Plug, label: 'Konnektoren' },
   { id: 'settings', icon: Settings, label: 'Einstellungen' }
 ]
 
