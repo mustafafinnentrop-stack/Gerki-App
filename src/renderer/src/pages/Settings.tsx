@@ -18,6 +18,7 @@ export default function SettingsPage(): React.JSX.Element {
   const [appVersion, setAppVersion] = useState<string>('')
   const [checkingUpdate, setCheckingUpdate] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'error'>('idle')
+  const [updateError, setUpdateError] = useState<string>('')
 
   useEffect(() => {
     checkOllamaStatus()
@@ -26,7 +27,11 @@ export default function SettingsPage(): React.JSX.Element {
 
     const unsubAvailable = window.gerki.on('app:update-available', () => setUpdateStatus('available'))
     const unsubNotAvail = window.gerki.on('app:update-not-available', () => setUpdateStatus('up-to-date'))
-    const unsubError = window.gerki.on('app:update-error', () => setUpdateStatus('error'))
+    const unsubError = window.gerki.on('app:update-error', (data: unknown) => {
+      const d = data as { error?: string } | undefined
+      setUpdateError(d?.error ?? 'Unbekannter Fehler')
+      setUpdateStatus('error')
+    })
 
     const unsubPull = window.gerki.on('ollama:pull-progress', (data: unknown) => {
       const d = data as { status: string; percent?: number }
@@ -38,10 +43,12 @@ export default function SettingsPage(): React.JSX.Element {
   const checkForUpdates = async () => {
     setCheckingUpdate(true)
     setUpdateStatus('checking')
+    setUpdateError('')
     const result = await window.gerki.appInfo?.checkForUpdates()
     setCheckingUpdate(false)
     if (result && !result.success) {
-      setUpdateStatus('up-to-date')
+      setUpdateError(result.error ?? 'Update-Prüfung fehlgeschlagen')
+      setUpdateStatus('error')
       return
     }
     setTimeout(() => setUpdateStatus((prev) => prev === 'checking' ? 'up-to-date' : prev), 10000)
@@ -179,7 +186,11 @@ export default function SettingsPage(): React.JSX.Element {
               <p className="text-xs text-white/40 mt-0.5">
                 {updateStatus === 'available' && <span className="text-green-400">Update verfügbar! Wird beim Neustart installiert.</span>}
                 {updateStatus === 'up-to-date' && <span className="text-green-400">Du hast die neueste Version.</span>}
-                {updateStatus === 'error' && <span className="text-red-400">Update-Prüfung fehlgeschlagen.</span>}
+                {updateStatus === 'error' && (
+                  <span className="text-red-400" title={updateError}>
+                    {updateError || 'Update-Prüfung fehlgeschlagen.'}
+                  </span>
+                )}
                 {(updateStatus === 'idle' || updateStatus === 'checking') && 'Automatische Updates alle 4 Stunden'}
               </p>
             </div>

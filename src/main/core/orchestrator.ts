@@ -179,8 +179,18 @@ export async function processMessage(
   }
 
   // 4. System-Prompt zusammenbauen
+  const honestyDirective = `
+WICHTIG – Was Gerki NICHT kann (niemals behaupten):
+- Gerki kann KEINE neuen Ordner erstellen, Dateien verschieben, umbenennen oder löschen
+- Gerki kann NICHT auf Google Drive, OneDrive, iCloud oder andere Cloud-Dienste zugreifen
+- Gerki kann AUSSCHLIESSLICH Dateien in den vom Nutzer explizit freigegebenen Ordnern LESEN und durchsuchen
+- Erfinde NIEMALS Dateistrukturen, Ordner oder Dateien die du "erstellt" hast – das wäre eine Lüge
+- Wenn der Nutzer möchte dass du Dateien organisierst: Sage ehrlich "Ich kann keine Ordner anlegen oder Dateien verschieben", und biete stattdessen eine Schritt-für-Schritt-Anleitung für den Nutzer oder erstelle ein Exportdokument (↓) mit der gewünschten Struktur.
+`
+
   const systemPrompt = [
     skill.systemPrompt,
+    honestyDirective,
     memoryContext ? `\n\n${memoryContext}` : '',
     fileContext
   ]
