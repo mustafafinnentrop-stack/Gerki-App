@@ -16,9 +16,6 @@ import { getDB } from '../db/database'
 import { buildMemoryContext, rememberFacts } from '../db/memory'
 import { detectSkill, getSkill } from './skills'
 import { searchFiles, getIndexStats } from './fileIndexer'
-import { getOpenclawClient, DEFAULT_OPENCLAW_URL } from './openclawClient'
-import { runAgenticLoop } from './agenticLoop'
-import type { AgentStep } from './agenticLoop'
 import { getOllamaClient, DEFAULT_OLLAMA_MODEL } from './ollamaClient'
 import { checkAccess, getEffectivePlan } from './planEnforcement'
 import { getCachedUser, getLastVerifiedAt } from './remoteAuth'
@@ -36,10 +33,7 @@ export interface OrchestratorRequest {
   conversationId?: string
   model?: AIModel
   forceSkill?: string
-  agentMode?: boolean
 }
-
-export type { AgentStep }
 
 export interface OrchestratorResponse {
   conversationId: string
@@ -199,52 +193,10 @@ export async function processMessage(
   // 6. Usernachricht speichern
   saveMessage(conversationId, 'user', req.userMessage, skillSlug)
 
-  // 7. Ollama aufrufen
+  // 7. Ollama aufrufen (lokal, kein API-Key, keine Cloud)
   let responseContent = ''
 
-  // ── Agentic Mode (Openclaw + Ollama) ──────────────────────────────
-  const useAgentMode =
-    (req.agentMode || skill.tools.includes('openclaw_action'))
-
-  if (useAgentMode) {
-    const openclawUrl = getSetting('openclaw_url') ?? DEFAULT_OPENCLAW_URL
-    const isConnected = await getOpenclawClient(openclawUrl).isConnected()
-
-    if (isConnected) {
-      // Agentic Loop mit Ollama
-      const agentMessages = [
-        ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        { role: 'user' as const, content: req.userMessage }
-      ]
-
-      responseContent = await runAgenticLoop({
-        systemPrompt,
-        messages: agentMessages,
-        apiKey: '',
-        openclawUrl,
-        onToken: req['onToken'] as ((t: string) => void) | undefined,
-        onStep: req['onStep'] as ((s: AgentStep) => void) | undefined
-      })
-
-      const messageId = saveMessage(conversationId, 'assistant', responseContent, skillSlug)
-
-      extractFactsWithOllama(req.userMessage, responseContent, getSetting('ollama_model') ?? DEFAULT_OLLAMA_MODEL)
-        .then((facts) => { if (facts.length > 0) rememberFacts(facts, skillSlug) })
-        .catch(() => { /* Kein Blocker */ })
-
-      return {
-        conversationId,
-        messageId,
-        content: responseContent,
-        skill: skillSlug,
-        model,
-        filesUsed: filesUsed.length > 0 ? filesUsed : undefined
-      }
-    }
-    // Openclaw nicht verbunden → normaler Ollama-Fallback
-  }
-
-  // ── Ollama (lokale KI, kein API-Key, keine Cloud) ──────────────────
+  // ── Ollama ──────────────────────────────────────────────────────────
   const ollamaModel = getSetting('ollama_model') ?? DEFAULT_OLLAMA_MODEL
   const ollama = getOllamaClient()
 
