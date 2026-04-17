@@ -2,14 +2,19 @@
  * Plan-Enforcement für Gerki
  *
  * Gerki ist lokal-first: Das KI-Modell ist immer Ollama (lokal).
- * Plan-Unterschiede betreffen nur den Zugang zu spezialisierten Agenten (Skills).
+ * Plan-Unterschiede betreffen nur den Zugang zu spezialisierten Agenten.
  *
- * Pläne:
- *   trial    – 14-Tage Testphase (3 Basis-Skills)
- *   standard – 39,90 €/Mo → alle Basis-Skills
- *   pro      – 59,90 €/Mo → alle Skills
- *   business – 89,90 €/Mo → alle Skills + Desktop-Automatisierung
+ * Pläne (intern):
+ *   trial    – 14-Tage Testphase mit Basic-Agenten
+ *   standard – Basic  (39,90 €/Mo) → 3 spezialisierte Agenten
+ *   pro      – Pro    (59,90 €/Mo) → 5 spezialisierte Agenten
+ *   business – Business (89,90 €/Mo) → alle 8 Agenten
  *   expired  – Abgelaufen → gesperrt
+ *
+ * Agenten pro Plan:
+ *   Basic:    Allgemein, Behördenpost, Dokumenten-Assistent, E-Mail-Manager
+ *   Pro:      + HR-Assistent, Rechtsberater
+ *   Business: + Buchhaltung, Marketing
  *
  * Anti-Cheat:
  *   - Plan kommt aus serverside-signiertem JWT (gerki.app)
@@ -21,12 +26,18 @@ export type Plan = 'trial' | 'standard' | 'pro' | 'business' | 'expired'
 
 export const TRIAL_DAYS = 14
 
-// Welche Skills sind pro Plan erlaubt?
+// ── Basic (trial + standard): Allgemein + 3 spezialisierte Agenten ──────────
+const BASIC_SKILLS = ['general', 'behoerdenpost', 'dokumenten-assistent', 'email-manager']
+// ── Pro: Basic + HR + Rechtsberater ─────────────────────────────────────────
+const PRO_SKILLS = [...BASIC_SKILLS, 'hr-assistent', 'rechtsberater']
+// ── Business: alle 8 Agenten ─────────────────────────────────────────────────
+const BUSINESS_SKILLS = [...PRO_SKILLS, 'buchhaltung', 'marketing']
+
 const ALLOWED_SKILLS: Record<Plan, string[]> = {
-  trial:    ['general', 'behoerdenpost', 'dokumenten-assistent'],
-  standard: ['general', 'behoerdenpost', 'dokumenten-assistent', 'email-manager', 'buchhaltung'],
-  pro:      ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung', 'marketing'],
-  business: ['general', 'behoerdenpost', 'dokumenten-assistent', 'rechtsberater', 'email-manager', 'hr-assistent', 'buchhaltung', 'marketing'],
+  trial:    BASIC_SKILLS,
+  standard: BASIC_SKILLS,
+  pro:      PRO_SKILLS,
+  business: BUSINESS_SKILLS,
   expired:  []
 }
 

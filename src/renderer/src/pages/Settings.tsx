@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Settings, CheckCircle, Loader2, Monitor, RefreshCw, Cpu, Download, ArrowUpCircle, Shield } from 'lucide-react'
+import { Settings, CheckCircle, Loader2, RefreshCw, Cpu, Download, ArrowUpCircle, Shield } from 'lucide-react'
 
 interface OllamaModelInfo { name: string; size: number }
 interface OllamaAvailableModel { id: string; name: string; description: string; size: string; minRam: string; license: string }
@@ -11,17 +11,7 @@ interface OllamaStatus {
   availableModels: OllamaAvailableModel[]
 }
 
-interface OpenclawStatus {
-  connected: boolean
-  url: string
-}
-
 export default function SettingsPage(): React.JSX.Element {
-  const [openclawUrl, setOpenclawUrl] = useState('http://127.0.0.1:8765')
-  const [openclawStatus, setOpenclawStatus] = useState<OpenclawStatus | null>(null)
-  const [savingOpenclawUrl, setSavingOpenclawUrl] = useState(false)
-  const [openclawUrlSaved, setOpenclawUrlSaved] = useState(false)
-  const [checkingOpenclaw, setCheckingOpenclaw] = useState(false)
   const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus | null>(null)
   const [pullingModel, setPullingModel] = useState<string | null>(null)
   const [pullProgress, setPullProgress] = useState<string>('')
@@ -30,10 +20,6 @@ export default function SettingsPage(): React.JSX.Element {
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'error'>('idle')
 
   useEffect(() => {
-    window.gerki.settings.get().then((s) => {
-      if (s.openclaw_url) setOpenclawUrl(s.openclaw_url)
-    })
-    checkOpenclawStatus()
     checkOllamaStatus()
 
     window.gerki.appInfo?.getVersion().then((v) => setAppVersion(v ?? ''))
@@ -61,13 +47,6 @@ export default function SettingsPage(): React.JSX.Element {
     setTimeout(() => setUpdateStatus((prev) => prev === 'checking' ? 'up-to-date' : prev), 10000)
   }
 
-  const checkOpenclawStatus = async () => {
-    setCheckingOpenclaw(true)
-    const status = await window.gerki.openclaw.status()
-    setOpenclawStatus(status as OpenclawStatus)
-    setCheckingOpenclaw(false)
-  }
-
   const checkOllamaStatus = async () => {
     const status = await window.gerki.ollama.status()
     setOllamaStatus(status)
@@ -83,16 +62,6 @@ export default function SettingsPage(): React.JSX.Element {
     await window.gerki.ollama.setModel(modelId)
   }
 
-  const saveOpenclawUrl = async () => {
-    if (!openclawUrl.trim()) return
-    setSavingOpenclawUrl(true)
-    await window.gerki.openclaw.setUrl(openclawUrl.trim())
-    setSavingOpenclawUrl(false)
-    setOpenclawUrlSaved(true)
-    setTimeout(() => setOpenclawUrlSaved(false), 3000)
-    await checkOpenclawStatus()
-  }
-
   return (
     <div className="h-screen overflow-y-auto">
       <div className="max-w-xl mx-auto px-6 py-8">
@@ -102,7 +71,7 @@ export default function SettingsPage(): React.JSX.Element {
             <Settings size={20} className="text-primary" />
             <h1 className="text-xl font-semibold text-white">Einstellungen</h1>
           </div>
-          <p className="text-sm text-white/40">Lokale KI und Verbindungen konfigurieren</p>
+          <p className="text-sm text-white/40">Lokale KI konfigurieren</p>
         </div>
 
         {/* Datenschutz-Badge */}
@@ -199,71 +168,6 @@ export default function SettingsPage(): React.JSX.Element {
               })}
             </div>
           )}
-        </section>
-
-        {/* Openclaw Desktop-Automation */}
-        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
-          <div className="flex items-center gap-2 mb-1">
-            <Monitor size={16} className="text-accent" />
-            <h2 className="text-sm font-medium text-white">Openclaw Desktop-Automation</h2>
-          </div>
-          <p className="text-xs text-white/40 mb-4">
-            Desktop-Automatisierung: Klicken, Tippen, Screenshots, Formular-Ausfüllung.
-            Openclaw muss separat installiert sein.
-          </p>
-
-          <div className="flex items-center gap-3 mb-3">
-            {openclawStatus ? (
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    openclawStatus.connected ? 'bg-green-400' : 'bg-red-400'
-                  }`}
-                />
-                <span className="text-sm text-white/60">
-                  {openclawStatus.connected ? 'Verbunden' : 'Nicht verbunden'}
-                </span>
-                <span className="text-xs text-white/30">{openclawStatus.url}</span>
-              </div>
-            ) : (
-              <span className="text-sm text-white/30">Wird geprüft...</span>
-            )}
-
-            <button
-              onClick={checkOpenclawStatus}
-              disabled={checkingOpenclaw}
-              className="ml-auto p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
-              title="Status prüfen"
-            >
-              <RefreshCw size={14} className={checkingOpenclaw ? 'animate-spin' : ''} />
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-xs text-white/30 mb-1.5">Openclaw URL</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={openclawUrl}
-                onChange={(e) => setOpenclawUrl(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && saveOpenclawUrl()}
-                className="flex-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-primary/50 transition-colors"
-              />
-              <button
-                onClick={saveOpenclawUrl}
-                disabled={savingOpenclawUrl}
-                className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/80 disabled:bg-white/5 disabled:text-white/20 text-sm text-white font-medium transition-colors flex items-center gap-2"
-              >
-                {savingOpenclawUrl ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : openclawUrlSaved ? (
-                  <CheckCircle size={14} className="text-green-400" />
-                ) : (
-                  'Speichern'
-                )}
-              </button>
-            </div>
-          </div>
         </section>
 
         {/* App-Updates */}

@@ -8,20 +8,12 @@ import {
   User,
   Zap,
   FileText,
-  Camera,
-  MousePointer,
-  Keyboard,
-  Globe,
-  Search,
-  AlertCircle,
-  CheckCircle2,
   Copy,
   Check,
   Paperclip,
   X,
   Download
 } from 'lucide-react'
-import type { AgentStep } from '../types/electron'
 
 interface Message {
   id: string
@@ -30,7 +22,6 @@ interface Message {
   skill?: string
   model?: string
   created_at?: string
-  agentSteps?: AgentStep[]
 }
 
 interface AttachedFile {
@@ -70,7 +61,6 @@ const SKILL_COLORS: Record<string, string> = {
   marketing: 'text-pink-400'
 }
 
-
 // ── Copy Button ─────────────────────────────────────────────────────────
 
 function CopyButton({ text }: { text: string }): React.JSX.Element {
@@ -82,7 +72,6 @@ function CopyButton({ text }: { text: string }): React.JSX.Element {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Fallback for older Electron versions
       const el = document.createElement('textarea')
       el.value = text
       document.body.appendChild(el)
@@ -241,20 +230,11 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
             </div>
           )}
         </div>
-        {/* Assistant action bar: always visible below bubble */}
+        {/* Assistant action bar */}
         {!isUser && (
           <div className="flex items-center gap-1 mt-1 pl-1">
             <CopyButton text={message.content} />
             <SaveDocButton content={message.content} />
-          </div>
-        )}
-
-        {/* Gespeicherte Agenten-Schritte */}
-        {!isUser && message.agentSteps && message.agentSteps.length > 0 && (
-          <div className="space-y-1 mt-1">
-            {message.agentSteps.map((step, i) => (
-              <AgentStepBubble key={i} step={step} />
-            ))}
           </div>
         )}
 
@@ -273,81 +253,24 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
   )
 }
 
-// ── Agent Step Bubble ────────────────────────────────────────────────────
-
-const TOOL_ICONS: Record<string, React.ElementType> = {
-  take_screenshot: Camera,
-  click_at: MousePointer,
-  double_click_at: MousePointer,
-  type_text: Keyboard,
-  press_key: Keyboard,
-  open_url: Globe,
-  open_app: Globe,
-  find_element: Search,
-  search_files: Search,
-  scroll: MousePointer
-}
-
-function AgentStepBubble({ step }: { step: AgentStep }): React.JSX.Element {
-  const Icon = TOOL_ICONS[step.tool ?? ''] ?? Zap
-  const isError = step.type === 'error'
-  const isScreenshot = step.type === 'screenshot'
-
-  return (
-    <div className={`flex items-start gap-2 py-1.5 px-3 rounded-xl text-xs ${
-      isError
-        ? 'bg-red-500/10 border border-red-500/20 text-red-400'
-        : 'bg-white/5 border border-white/5 text-white/50'
-    }`}>
-      {isError ? (
-        <AlertCircle size={12} className="flex-shrink-0 mt-0.5 text-red-400" />
-      ) : step.type === 'tool_call' ? (
-        <Icon size={12} className="flex-shrink-0 mt-0.5 text-accent" />
-      ) : (
-        <CheckCircle2 size={12} className="flex-shrink-0 mt-0.5 text-green-400" />
-      )}
-      <div className="flex-1 min-w-0">
-        <span className={step.type === 'tool_call' ? 'text-accent' : ''}>{step.label}</span>
-        {isScreenshot && step.image && (
-          <div className="mt-2 rounded-lg overflow-hidden border border-white/10 max-w-xs">
-            <img
-              src={`data:image/png;base64,${step.image}`}
-              alt="Screenshot"
-              className="w-full h-auto"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ── Streaming Message ────────────────────────────────────────────────────
 
-function StreamingMessage({ content, agentSteps }: { content: string; agentSteps?: AgentStep[] }): React.JSX.Element {
+function StreamingMessage({ content }: { content: string }): React.JSX.Element {
   return (
     <div className="flex gap-3">
       <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-accent/20">
         <Bot size={16} className="text-accent" />
       </div>
-      <div className="flex-1 max-w-[80%] space-y-2">
-        {agentSteps && agentSteps.length > 0 && (
-          <div className="space-y-1">
-            {agentSteps.map((step, i) => (
-              <AgentStepBubble key={i} step={step} />
-            ))}
-          </div>
-        )}
-        {content && (
+      <div className="flex-1 max-w-[80%]">
+        {content ? (
           <div className="px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed whitespace-pre-wrap bg-surface text-white/90 border border-white/5">
             {content}
             <span className="inline-block w-0.5 h-4 bg-accent ml-0.5 animate-pulse align-middle" />
           </div>
-        )}
-        {!content && agentSteps && agentSteps.length > 0 && (
+        ) : (
           <div className="flex items-center gap-2 px-3 py-2 text-xs text-accent">
             <Loader2 size={12} className="animate-spin" />
-            Gerki arbeitet...
+            Gerki denkt nach...
           </div>
         )}
       </div>
@@ -368,9 +291,6 @@ export default function ChatPage({
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
-  const [liveAgentSteps, setLiveAgentSteps] = useState<AgentStep[]>([])
-  const liveAgentStepsRef = useRef<AgentStep[]>([]) // Fix: stale closure bug
-  const [agentMode, setAgentMode] = useState(false)
   const [currentConvId, setCurrentConvId] = useState<string | null>(conversationId)
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const [uploadingFile, setUploadingFile] = useState(false)
@@ -408,19 +328,13 @@ export default function ChatPage({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingContent])
 
-  // Subscribe to streaming tokens + agent steps
+  // Subscribe to streaming tokens
   useEffect(() => {
     const unsubToken = window.gerki.on('chat:token', (token: unknown) => {
       setStreamingContent((prev) => prev + (token as string))
     })
-    const unsubStep = window.gerki.on('chat:agent-step', (step: unknown) => {
-      const s = step as AgentStep
-      liveAgentStepsRef.current = [...liveAgentStepsRef.current, s]
-      setLiveAgentSteps([...liveAgentStepsRef.current])
-    })
     return () => {
       unsubToken()
-      unsubStep()
     }
   }, [])
 
@@ -458,12 +372,10 @@ export default function ChatPage({
       const imageFiles = attachedFiles.filter((f) => f.type === 'image' && f.content)
       const binaryFiles = attachedFiles.filter((f) => f.type === 'binary' || !f.content)
 
-      // Textdateien als Kontext einfügen
       const fileContext = textFiles
         .map((f) => `[DATEI: ${f.name}]\n\`\`\`\n${f.content}\n\`\`\``)
         .join('\n\n')
 
-      // Bilder als speziellen Marker (werden im Backend als Vision-Input behandelt)
       const imageContext = imageFiles
         .map((f) => `[BILD: ${f.name}] data:${f.mimeType ?? 'image/jpeg'};base64,${f.content}`)
         .join('\n')
@@ -479,8 +391,6 @@ export default function ChatPage({
     setAttachedFiles([])
     setIsLoading(true)
     setStreamingContent('')
-    setLiveAgentSteps([])
-    liveAgentStepsRef.current = []
 
     // Optimistisch User-Message anzeigen
     const displayText = text || `📎 ${attachedFiles.map((f) => f.name).join(', ')}`
@@ -495,7 +405,6 @@ export default function ChatPage({
         userMessage: fullMessage,
         conversationId: currentConvId ?? undefined,
         model: 'ollama',
-        agentMode,
         forceSkill: forceSkill ?? undefined
       })
 
@@ -507,10 +416,7 @@ export default function ChatPage({
           onConversationCreated(newConvId)
         }
 
-        const capturedSteps = liveAgentStepsRef.current.length > 0 ? [...liveAgentStepsRef.current] : undefined
         setStreamingContent('')
-        setLiveAgentSteps([])
-        liveAgentStepsRef.current = []
         setMessages((prev) => [
           ...prev,
           {
@@ -518,8 +424,7 @@ export default function ChatPage({
             role: 'assistant',
             content,
             skill,
-            model,
-            agentSteps: capturedSteps
+            model
           }
         ])
         onConversationsChanged()
@@ -539,7 +444,7 @@ export default function ChatPage({
     } finally {
       setIsLoading(false)
     }
-  }, [input, attachedFiles, isLoading, currentConvId, agentMode, onConversationCreated, onConversationsChanged])
+  }, [input, attachedFiles, isLoading, currentConvId, onConversationCreated, onConversationsChanged])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -556,6 +461,9 @@ export default function ChatPage({
   }
 
   const isEmpty = messages.length === 0 && !streamingContent
+
+  // suppress unused warning – plan may be used for future gating
+  void userPlan
 
   return (
     <div className="flex flex-col h-screen">
@@ -611,10 +519,10 @@ export default function ChatPage({
           {messages.map((msg) => (
             <MessageBubble key={msg.id} message={msg} />
           ))}
-          {(streamingContent || liveAgentSteps.length > 0) && (
-            <StreamingMessage content={streamingContent} agentSteps={liveAgentSteps} />
+          {streamingContent && (
+            <StreamingMessage content={streamingContent} />
           )}
-          {isLoading && !streamingContent && liveAgentSteps.length === 0 && (
+          {isLoading && !streamingContent && (
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-accent/20">
                 <Loader2 size={16} className="text-accent animate-spin" />
@@ -686,22 +594,6 @@ export default function ChatPage({
           />
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Agent Mode Toggle – Desktop-Automatisierung via Openclaw */}
-            <button
-              onClick={() => setAgentMode(!agentMode)}
-              title={agentMode
-                ? 'Desktop-Agent aktiv – Gerki kann deinen Bildschirm steuern (braucht Openclaw)'
-                : 'Desktop-Agent aktivieren (braucht Openclaw)'}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors ${
-                agentMode
-                  ? 'bg-accent/20 text-accent border border-accent/30'
-                  : 'text-white/20 hover:text-white/50'
-              }`}
-            >
-              <Zap size={11} />
-              Desktop-Agent
-            </button>
-
             {/* Modell-Anzeige (immer lokal) */}
             <span className="text-xs text-white/20 py-1">⚡ Lokal (Ollama)</span>
 

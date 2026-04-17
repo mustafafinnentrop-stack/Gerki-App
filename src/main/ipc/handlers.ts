@@ -38,7 +38,6 @@ import {
 } from '../db/memory'
 import { getAllSkills } from '../core/skills'
 import { getDB } from '../db/database'
-import { getOpenclawClient, resetOpenclawClient, DEFAULT_OPENCLAW_URL } from '../core/openclawClient'
 import { getOllamaClient, AVAILABLE_MODELS } from '../core/ollamaClient'
 import {
   registerUser,
@@ -199,128 +198,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
       .prepare('UPDATE skills SET active = ? WHERE slug = ?')
       .run(active ? 1 : 0, slug)
     return { success: true }
-  })
-
-  // =====================================================
-  // OPENCLAW (Desktop-Automatisierung)
-  // =====================================================
-
-  ipcMain.handle('openclaw:status', async () => {
-    try {
-      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
-      const oc = getOpenclawClient(url)
-      const connected = await oc.isConnected()
-      const version = connected ? await oc.getVersion() : null
-      return { connected, url, version }
-    } catch {
-      return { connected: false, url: DEFAULT_OPENCLAW_URL, version: null }
-    }
-  })
-
-  ipcMain.handle('openclaw:action', async (_event, action: Record<string, unknown>) => {
-    try {
-      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
-      const res = await fetch(`${url}/action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(action),
-        signal: AbortSignal.timeout(10000)
-      })
-      return await res.json()
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
-  })
-
-  ipcMain.handle('openclaw:screenshot', async () => {
-    try {
-      const url = getSettings().openclaw_url ?? DEFAULT_OPENCLAW_URL
-      const oc = getOpenclawClient(url)
-      return await oc.screenshot()
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
-  })
-
-  ipcMain.handle('openclaw:set-url', (_event, url: string) => {
-    getDB().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('openclaw_url', url)
-    resetOpenclawClient()
-    return { success: true }
-  })
-
-  ipcMain.handle('openclaw:open-download', async () => {
-    await shell.openExternal('https://openclaw.ai')
-    return { success: true, url: 'https://openclaw.ai' }
-  })
-
-  ipcMain.handle('openclaw:install-auto', async () => {
-    try {
-      if (process.platform === 'win32') {
-        win().webContents.send('openclaw:install-progress', { status: 'Firewall-Regel für Port 8765 wird hinzugefügt...', percent: 20 })
-        exec(
-          'powershell -Command "Start-Process powershell -ArgumentList \'-Command netsh advfirewall firewall add rule name=\\\"OpenClaw 8765\\\" dir=in action=allow protocol=TCP localport=8765\' -Verb RunAs -Wait"',
-          () => {}
-        )
-        await new Promise(r => setTimeout(r, 3000))
-
-        win().webContents.send('openclaw:install-progress', { status: 'Starte OpenClaw im Hintergrund...', percent: 40 })
-        const winChild = exec('start /B ollama launch openclaw', { windowsHide: true })
-        winChild.unref()
-      } else {
-        win().webContents.send('openclaw:install-progress', { status: 'Installiere OpenClaw via install.sh...', percent: 20 })
-
-        await new Promise<void>((resolve, reject) => {
-          exec('curl -fsSL https://openclaw.ai/install.sh | bash', { timeout: 120000 }, (error) => {
-            if (error) reject(error)
-            else resolve()
-          })
-        })
-
-        win().webContents.send('openclaw:install-progress', { status: 'Installation abgeschlossen. Starte OpenClaw...', percent: 70 })
-
-        const macChild = exec('openclaw &')
-        macChild.unref()
-      }
-
-      win().webContents.send('openclaw:install-progress', { status: 'Warte auf Verbindung... (bis zu 30s)', percent: 80 })
-
-      for (let i = 0; i < 15; i++) {
-        await new Promise(r => setTimeout(r, 2000))
-        try {
-          const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
-          if (res.ok) {
-            win().webContents.send('openclaw:install-progress', { status: 'OpenClaw bereit!', percent: 100 })
-            return { success: true }
-          }
-        } catch { /* noch nicht bereit */ }
-      }
-
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
-  })
-
-  ipcMain.handle('openclaw:start', async () => {
-    try {
-      if (process.platform === 'win32') {
-        const child = exec('start /B ollama launch openclaw', { windowsHide: true })
-        child.unref()
-      } else {
-        const child = exec('openclaw &')
-        child.unref()
-      }
-      for (let i = 0; i < 10; i++) {
-        await new Promise(r => setTimeout(r, 2000))
-        try {
-          const res = await fetch(`${DEFAULT_OPENCLAW_URL}/status`, { signal: AbortSignal.timeout(2000) })
-          if (res.ok) return { success: true }
-        } catch { /* noch nicht bereit */ }
-      }
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
   })
 
   // =====================================================

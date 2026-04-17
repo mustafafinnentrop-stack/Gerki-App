@@ -26,8 +26,7 @@ const TOOL_LABELS: Record<string, string> = {
   file_read: 'Dateilesen',
   email_draft: 'E-Mail',
   pdf_export: 'PDF-Export',
-  web_search: 'Websuche',
-  openclaw_action: 'Desktop-Automation'
+  web_search: 'Websuche'
 }
 
 export default function SkillsPage(): React.JSX.Element {
