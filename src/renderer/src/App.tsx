@@ -8,12 +8,13 @@ import SettingsPage from './pages/Settings'
 import AccountPage from './pages/Account'
 import SkillsPage from './pages/Skills'
 import ConnectorsPage from './pages/Connectors'
+import ProfilePage from './pages/Profile'
 import VoiceAssistant from './pages/VoiceAssistant'
 import SetupWizard from './pages/Setup'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'connectors' | 'settings' | 'account'
+type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'connectors' | 'profile' | 'settings' | 'account'
 type AppState = 'loading' | 'login' | 'register' | 'setup' | 'app'
 type AppMode = 'voice' | 'text'
 
@@ -207,6 +208,7 @@ export default function App(): React.JSX.Element {
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
         {page === 'connectors' && <ConnectorsPage />}
+        {page === 'profile' && <ProfilePage />}
         {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'trial') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'} />}
         {page === 'account' && user && (
           <AccountPage user={user} onLogout={handleLogout} />

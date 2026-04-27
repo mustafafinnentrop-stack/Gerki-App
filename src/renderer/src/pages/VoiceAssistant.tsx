@@ -187,20 +187,79 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, liveTranscript])
 
-  // Greeting on mount
+  // Greeting + optional morning routine on mount
   useEffect(() => {
     if (greeted.current || !tts.supported) return
     greeted.current = true
+
     const name = user?.username ?? 'da'
     const hour = new Date().getHours()
     const greeting =
       hour < 12 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend'
-    setTimeout(() => {
+
+    const run = async () => {
       if (!ttsEnabled) return
+
+      // Load routine settings
+      let routineParts: string[] = []
+      try {
+        const s = await window.gerki.settings.get()
+        const enabled = s['routine_enabled'] === '1'
+        const timeStart = parseInt(s['routine_time_start'] ?? '6')
+        const timeEnd = parseInt(s['routine_time_end'] ?? '11')
+        const items: string[] = JSON.parse(s['routine_items'] ?? '["weather","news","calendar"]')
+        const lastRun = s['routine_last_run'] ?? ''
+        const today = new Date().toISOString().slice(0, 10)
+
+        if (enabled && hour >= timeStart && hour < timeEnd && lastRun !== today) {
+          // Mark as run for today
+          await window.gerki.settings.set('routine_last_run', today)
+
+          // Fetch all routine data in parallel
+          const [weatherRes, newsRes, calRes] = await Promise.all([
+            items.includes('weather') ? window.gerki.routine.weather(s['weather_city'] ?? 'Berlin') : null,
+            items.includes('news') ? window.gerki.routine.news(
+              JSON.parse(s['news_feeds'] ?? '[]'), 3
+            ) : null,
+            items.includes('calendar') ? window.gerki.routine.calendar(s['calendar_path'] || undefined) : null
+          ])
+
+          if (weatherRes?.success) {
+            routineParts.push(
+              `Das Wetter in ${weatherRes.city}: ${weatherRes.description}, aktuell ${weatherRes.temperature} Grad. ` +
+              `Heute zwischen ${weatherRes.temperatureMin} und ${weatherRes.temperatureMax} Grad.`
+            )
+          }
+
+          if (newsRes?.success && newsRes.items?.length) {
+            const headlines = newsRes.items.slice(0, 3).map((i) => i.title).join('. ')
+            routineParts.push(`Die aktuellen Nachrichten: ${headlines}.`)
+          }
+
+          if (calRes?.success && calRes.events?.length) {
+            const evtTexts = calRes.events
+              .slice(0, 4)
+              .map((e) => `${e.startTime === 'Ganztägig' ? 'Ganztägig' : `um ${e.startTime}`}: ${e.title}`)
+              .join(', ')
+            routineParts.push(`Deine heutigen Termine: ${evtTexts}.`)
+          } else if (calRes?.success) {
+            routineParts.push('Du hast heute keine Termine.')
+          }
+        }
+      } catch { /* ignore, continue with basic greeting */ }
+
       setOrbState('speaking')
-      tts.speak(`${greeting} ${name}, schön dass du da bist. Wie kann ich dir heute helfen?`)
-    }, 600)
-  }, [tts, ttsEnabled, user])
+      const baseGreeting = `${greeting} ${name}, schön dass du da bist.`
+      if (routineParts.length > 0) {
+        tts.speak(`${baseGreeting} Hier deine Morgen-Zusammenfassung. ${routineParts.join(' ')} Wie kann ich dir sonst helfen?`)
+      } else {
+        tts.speak(`${baseGreeting} Wie kann ich dir heute helfen?`)
+      }
+    }
+
+    setTimeout(run, 600)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tts.supported, ttsEnabled, user])
 
   // Sync orb with TTS state
   useEffect(() => {

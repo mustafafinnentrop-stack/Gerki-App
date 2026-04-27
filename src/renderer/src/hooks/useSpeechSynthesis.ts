@@ -8,7 +8,7 @@ export interface UseSpeechSynthesisOptions {
 }
 
 export interface UseSpeechSynthesisReturn {
-  speak: (text: string) => void
+  speak: (text: string, voiceURIOverride?: string, rateOverride?: number) => void
   stop: () => void
   isSpeaking: boolean
   voices: SpeechSynthesisVoice[]
@@ -48,7 +48,7 @@ export function useSpeechSynthesis(
   }, [supported])
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, voiceURIOverride?: string, rateOverride?: number) => {
       if (!supported || !text.trim()) return
 
       // Cancel previous utterance
@@ -56,15 +56,14 @@ export function useSpeechSynthesis(
 
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = optsRef.current.language ?? 'de-DE'
-      utterance.rate = optsRef.current.rate ?? 1.0
+      utterance.rate = rateOverride ?? optsRef.current.rate ?? 1.0
       utterance.pitch = optsRef.current.pitch ?? 1.0
 
       // Try to find the selected voice
       const allVoices = window.speechSynthesis.getVoices()
-      if (optsRef.current.voiceURI) {
-        const selectedVoice = allVoices.find(
-          (v) => v.voiceURI === optsRef.current.voiceURI
-        )
+      const targetURI = voiceURIOverride ?? optsRef.current.voiceURI
+      if (targetURI) {
+        const selectedVoice = allVoices.find((v) => v.voiceURI === targetURI)
         if (selectedVoice) utterance.voice = selectedVoice
       } else {
         // Auto-pick a German voice

@@ -64,6 +64,9 @@ import {
   disconnectConnector
 } from '../core/connectors/base'
 import { executeCommand as osExecuteCommand } from '../core/osOps'
+import { getWeather } from '../core/weather'
+import { getNews } from '../core/news'
+import { getTodayEvents } from '../core/calendar'
 
 export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void {
   // Hilfsfunktion: immer das aktuelle Fenster holen (auch nach Mac-Neuöffnung)
@@ -130,6 +133,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   ipcMain.handle('settings:get', () => {
     return getSettings()
+  })
+
+  ipcMain.handle('settings:set', (_event, key: string, value: string) => {
+    getDB().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
+    return { success: true }
   })
 
   // =====================================================
@@ -535,4 +543,19 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   // OS-ZUGRIFF (Sprachassistent / Jarvis-Mode)
   // =====================================================
   ipcMain.handle('os:exec', (_event, command: string) => osExecuteCommand(command, win()))
+
+  // =====================================================
+  // MORGEN-ROUTINE (Wetter, News, Kalender)
+  // =====================================================
+  ipcMain.handle('routine:weather', async (_event, city: string, lat?: string, lon?: string) => {
+    return getWeather(city, lat, lon)
+  })
+
+  ipcMain.handle('routine:news', async (_event, feedUrls?: string[], count?: number) => {
+    return getNews(feedUrls, count ?? 5)
+  })
+
+  ipcMain.handle('routine:calendar', async (_event, calendarPath?: string) => {
+    return getTodayEvents(calendarPath)
+  })
 }

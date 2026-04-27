@@ -19,7 +19,18 @@ const gerki = {
 
   // ── Settings ──────────────────────────────────────────────────────
   settings: {
-    get: () => ipcRenderer.invoke('settings:get')
+    get: () => ipcRenderer.invoke('settings:get'),
+    set: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value)
+  },
+
+  // ── Morgen-Routine ────────────────────────────────────────────────
+  routine: {
+    weather: (city: string, lat?: string, lon?: string) =>
+      ipcRenderer.invoke('routine:weather', city, lat, lon),
+    news: (feedUrls?: string[], count?: number) =>
+      ipcRenderer.invoke('routine:news', feedUrls, count),
+    calendar: (calendarPath?: string) =>
+      ipcRenderer.invoke('routine:calendar', calendarPath)
   },
 
   // ── Dateisystem ───────────────────────────────────────────────────

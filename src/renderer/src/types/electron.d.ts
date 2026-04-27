@@ -47,6 +47,33 @@ declare global {
       // ── Settings ──────────────────────────────────────────────────
       settings: {
         get: () => Promise<Record<string, string>>
+        set: (key: string, value: string) => Promise<{ success: boolean }>
+      }
+
+      // ── Morgen-Routine ─────────────────────────────────────────────
+      routine: {
+        weather: (city: string, lat?: string, lon?: string) => Promise<{
+          success: boolean
+          city?: string
+          temperature?: number
+          temperatureMax?: number
+          temperatureMin?: number
+          weatherCode?: number
+          windspeed?: number
+          description?: string
+          error?: string
+        }>
+        news: (feedUrls?: string[], count?: number) => Promise<{
+          success: boolean
+          items?: Array<{ title: string; description: string; link: string; pubDate: string }>
+          error?: string
+        }>
+        calendar: (calendarPath?: string) => Promise<{
+          success: boolean
+          events?: Array<{ title: string; startTime: string; endTime?: string; location?: string }>
+          source?: string
+          error?: string
+        }>
       }
 
       // ── Dateisystem ───────────────────────────────────────────────

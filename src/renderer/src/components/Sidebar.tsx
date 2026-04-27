@@ -9,7 +9,8 @@ import {
   Plus,
   User,
   Crown,
-  Plug
+  Plug,
+  Sunrise
 } from 'lucide-react'
 
 interface Conversation {
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { id: 'memory', icon: Brain, label: 'Memory' },
   { id: 'files', icon: FolderOpen, label: 'Dateien' },
   { id: 'connectors', icon: Plug, label: 'Konnektoren' },
+  { id: 'profile', icon: Sunrise, label: 'Profil & Routine' },
   { id: 'settings', icon: Settings, label: 'Einstellungen' }
 ]
 
