@@ -63,6 +63,7 @@ import {
   connectConnector,
   disconnectConnector
 } from '../core/connectors/base'
+import { executeCommand as osExecuteCommand } from '../core/osOps'
 
 export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void {
   // Hilfsfunktion: immer das aktuelle Fenster holen (auch nach Mac-Neuöffnung)
@@ -529,4 +530,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   ipcMain.handle('connectors:list', () => getAllConnectors())
   ipcMain.handle('connectors:connect', (_event, id: string) => connectConnector(id, win()))
   ipcMain.handle('connectors:disconnect', (_event, id: string) => disconnectConnector(id))
+
+  // =====================================================
+  // OS-ZUGRIFF (Sprachassistent / Jarvis-Mode)
+  // =====================================================
+  ipcMain.handle('os:exec', (_event, command: string) => osExecuteCommand(command, win()))
 }

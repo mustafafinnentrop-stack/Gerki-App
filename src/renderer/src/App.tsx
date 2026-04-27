@@ -8,12 +8,14 @@ import SettingsPage from './pages/Settings'
 import AccountPage from './pages/Account'
 import SkillsPage from './pages/Skills'
 import ConnectorsPage from './pages/Connectors'
+import VoiceAssistant from './pages/VoiceAssistant'
 import SetupWizard from './pages/Setup'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
 type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'connectors' | 'settings' | 'account'
 type AppState = 'loading' | 'login' | 'register' | 'setup' | 'app'
+type AppMode = 'voice' | 'text'
 
 interface UserInfo {
   id: string
@@ -34,6 +36,9 @@ export default function App(): React.JSX.Element {
   const [appState, setAppState] = useState<AppState>('loading')
   const [user, setUser] = useState<UserInfo | null>(null)
   const [page, setPage] = useState<Page>('chat')
+  const [mode, setMode] = useState<AppMode>(() => {
+    return (localStorage.getItem('gerki.mode') as AppMode) ?? 'voice'
+  })
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [activeSkill, setActiveSkill] = useState<string | null>(null)
@@ -87,6 +92,11 @@ export default function App(): React.JSX.Element {
     setAppState('login')
   }, [])
 
+  const handleSwitchMode = useCallback((newMode: AppMode) => {
+    localStorage.setItem('gerki.mode', newMode)
+    setMode(newMode)
+  }, [])
+
   const handleNewChat = () => {
     setActiveConversationId(null)
     setActiveSkill(null)
@@ -135,6 +145,16 @@ export default function App(): React.JSX.Element {
           setAppState('app')
           loadConversations()
         }}
+      />
+    )
+  }
+
+  // ── Voice Mode ───────────────────────────────────────────────────
+  if (mode === 'voice') {
+    return (
+      <VoiceAssistant
+        user={user}
+        onSwitchToText={() => handleSwitchMode('text')}
       />
     )
   }

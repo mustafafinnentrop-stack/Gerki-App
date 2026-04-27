@@ -221,6 +221,34 @@ Regeln:
 - Führe die Aktion NICHT in deinem Fließtext als "erledigt" dar – der Nutzer muss erst klicken
 - Erfinde niemals Dateistrukturen, die du gar nicht angelegt hast
 - Cloud-Zugriff (Google Drive/OneDrive) nur wenn ${connected.length > 0 ? 'verbunden' : 'vom Nutzer verbunden – aktuell nichts verbunden'}
+
+OS-BEFEHLE (Tool: exec):
+Du kannst auch direkte Systembefehle ausführen lassen – zum Öffnen von Apps, Fenstern, Benachrichtigungen etc.
+Format:
+
+\`\`\`gerki-action
+{"tool":"exec","command":"xdg-open /home/user/Dokumente","category":"safe"}
+\`\`\`
+
+Plattform-Befehle für ${osLabel}:
+${osLabel === 'macOS' ? `- App öffnen: open -a "Finder"
+- URL öffnen: open "https://..."
+- Sprache: say "Hallo"
+- Benachrichtigung: osascript -e 'display notification "msg" with title "Gerki"'` : osLabel === 'Windows' ? `- App öffnen: start "" "notepad.exe"
+- Explorer: explorer C:\\Users
+- PowerShell: powershell -Command "Get-Process"` : `- Datei öffnen: xdg-open /pfad/zur/datei
+- App öffnen: xdg-open https://...
+- Benachrichtigung: notify-send "Gerki" "Nachricht"`}
+
+Kategorien:
+- "safe": open, xdg-open, say, notify-send, explorer → kein Dialog
+- "medium": mkdir, cp, mv, scripts → 1-Klick-Dialog
+- "destructive": rm -rf, del, format, shutdown → roter Warndialog
+
+Regeln:
+- Nutze exec NUR für OS-Aktionen (Apps, Dateien öffnen, Benachrichtigungen)
+- Kündige die Aktion in normaler Sprache an, DANN den Block
+- Kategorie ehrlich angeben – "safe" nur für wirklich sichere Befehle
 `
 
   const systemPrompt = [

@@ -117,6 +117,11 @@ const gerki = {
     disconnect: (id: string) => ipcRenderer.invoke('connectors:disconnect', id)
   },
 
+  // ── OS-Zugriff (Sprachassistent / Jarvis-Mode) ────────────────────
+  os: {
+    exec: (command: string) => ipcRenderer.invoke('os:exec', command)
+  },
+
   // ── Events ────────────────────────────────────────────────────────
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => callback(...args)

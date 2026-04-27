@@ -1,6 +1,6 @@
 {
   "name": "gerki",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "Gerki – Dein lokaler KI-Assistent. 100% DSGVO-konform. Läuft mit Ollama auf deinem PC.",
   "author": {
     "name": "Gerki",

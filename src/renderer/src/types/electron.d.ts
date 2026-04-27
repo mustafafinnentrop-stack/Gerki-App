@@ -204,6 +204,11 @@ declare global {
         disconnect: (id: string) => Promise<{ success: boolean }>
       }
 
+      // ── OS-Zugriff (Sprachassistent / Jarvis-Mode) ─────────────────
+      os: {
+        exec: (command: string) => Promise<{ success: boolean; output?: string; error?: string; cancelled?: boolean }>
+      }
+
       // ── Events ────────────────────────────────────────────────────
       on: (channel: string, callback: (...args: unknown[]) => void) => () => void
     }
