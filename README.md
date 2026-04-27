@@ -1,82 +1,126 @@
-# Gerki
+# Gerki – Dein persönlicher KI-Assistent
 
-Dein persönlicher KI-Assistent – lokal auf deinem PC. Keine Cloud, keine API-Keys nötig für den Free-Plan.
+> Lokal. Privat. Intelligent. Kein Abo, keine Cloud, kein Tracking.
 
-Gerki nutzt [Ollama](https://ollama.com) als KI-Engine und läuft komplett offline.
+Gerki ist ein Desktop-KI-Assistent für Windows, macOS und Linux – komplett auf deinem Rechner, ohne Cloud-Zwang. Er spricht mit dir per Sprache, liest dir morgens deine Routine vor, verwaltet Dateien und kann sogar Apps auf deinem PC öffnen.
 
 ---
 
-## Features
+## Was Gerki kann
 
-- **Lokale KI** – Mistral, Qwen, Phi-4, Llama über Ollama (kein Internet nötig)
-- **Cloud-KI optional** – Claude (Anthropic) und GPT-4 (OpenAI) mit eigenem API-Key
-- **Gedächtnis** – Lernt aus Gesprächen und merkt sich Fakten über dich
-- **Dateizugriff** – Ordner freigeben, Dokumente durchsuchen und in Chats nutzen
-- **Skills** – Spezialisierte Assistenten (Behördenpost, Recht, Buchhaltung, HR, Marketing)
-- **Lokale Accounts** – PBKDF2-Authentifizierung, alles in SQLite lokal gespeichert
+### 🎙️ Sprachassistent (Jarvis-Mode)
+- **Vollbild Voice-Interface** mit animierter Gerki-Orb (Glassmorphism, 3 rotierende Ringe)
+- **Sprachsteuerung** – du redest, Gerki versteht und antwortet per Stimme
+- **TTS** (Text-to-Sprache) – komplett lokal, kein Internet nötig, deutsche Stimme wählbar
+- **STT** (Sprache-zu-Text) – über Web Speech API (einmalige DSGVO-Einwilligung)
+- Jederzeit wechselbar: **Voice Mode ↔ Text Mode**
+
+### ☀️ Morgen-Routine
+Gerki begrüßt dich jeden Morgen und liest automatisch vor:
+- **Wetterbericht** – Temperatur, Bedingungen, Min/Max (Open-Meteo, kein API-Key nötig)
+- **Aktuelle Nachrichten** – via RSS-Feeds (Standard: Tagesschau, eigene Feeds hinzufügbar)
+- **Heutige Termine** – aus deinem Kalender
+- Zeitfenster konfigurierbar (z.B. 6–11 Uhr), läuft einmal pro Tag
+
+### 📅 Kalender-Integration
+- **macOS:** Automatisch via Calendar.app (alle iCloud-, lokale und andere Kalender)
+- **Windows / Linux:** .ics-Datei hinterlegen (Google Calendar, Thunderbird, GNOME Calendar)
+- Nur Heute-Termine, nach Uhrzeit sortiert
+
+### 🖥️ OS-Vollzugriff
+Gerki kann auf Befehl Dinge auf deinem Rechner tun:
+- Apps öffnen, URLs starten, Benachrichtigungen senden
+- Dateien und Ordner anlegen, verschieben, umbenennen, löschen
+- Beliebige Shell-Befehle ausführen
+- **3-stufiges Sicherheitssystem:** sicher (kein Dialog) → mittel (1-Klick) → destruktiv (Warndialog)
+
+### 🧠 Gedächtnis
+- Lernt automatisch aus Gesprächen (Name, Vorlieben, Fakten)
+- Manuell verwaltbar in der Memory-Seite
+- Wird in allen Antworten berücksichtigt
+
+### 📂 Dateizugriff
+- Ordner freigeben → Gerki durchsucht und findet Dokumente (PDF, Word, Excel, Text)
+- Inhalte aus Dateien werden automatisch in Antworten eingebunden
+- Vollständige Schreibrechte mit Bestätigungsdialogen
+
+### 🔌 Cloud-Konnektoren *(optional, Opt-in)*
+- Google Drive, OneDrive, Dropbox verbinden
+- Klar als DSGVO-Opt-In deklariert
+
+### 🎭 Skills / Agenten
+Spezialisierte Assistenten für verschiedene Aufgaben:
+| Skill | Beschreibung |
+|-------|-------------|
+| Allgemein | Alltägliche Fragen und Aufgaben |
+| Behördenpost | Amtliche Schreiben verstehen & beantworten |
+| Dokumenten-Assistent | Verträge, Briefe, Berichte |
+| Rechtsberater | Rechtliche Einschätzungen (kein Anwaltsersatz) |
+| Buchhaltung | Rechnungen, Belege, Finanzen |
+| E-Mail-Manager | E-Mails verfassen und strukturieren |
+| HR-Assistent | Personalwesen, Stellenanzeigen |
+| Marketing | Texte, Kampagnen, Social Media |
+
+### 🔒 Datenschutz & Sicherheit
+- **100% lokal** – alle Daten bleiben auf deinem Rechner
+- Keine Cloud-KI, kein API-Key nötig (Ollama läuft lokal)
+- SQLite-Datenbank, PBKDF2-Passwort-Hashing
+- Kein Tracking, keine Telemetrie, kein Abo-Zwang
+- DSGVO-konform: STT-Einwilligung einmalig, TTS komplett lokal
+
+---
+
+## Unterstützte KI-Modelle (via Ollama)
+
+| Modell | Größe | RAM | Empfehlung |
+|--------|-------|-----|------------|
+| Mistral 7B | 4,1 GB | 8 GB | ✅ Standard, schnell |
+| Qwen 2.5 14B | 8,7 GB | 16 GB | Deutsch & Dokumente |
+| Phi-4 14B | 8,9 GB | 16 GB | Komplexe Aufgaben |
+| Llama 3.3 70B | 43 GB | 32 GB | Beste Qualität |
+
+---
 
 ## Tech Stack
 
 | Bereich | Technologie |
 |---------|-------------|
-| Desktop | Electron 28 |
+| Desktop | Electron |
 | Frontend | React 18 + TypeScript |
 | Styling | Tailwind CSS |
 | Datenbank | SQLite (better-sqlite3) |
-| KI lokal | Ollama (Mistral 7B empfohlen) |
-| KI cloud | Anthropic Claude, OpenAI GPT-4 |
+| KI lokal | Ollama |
+| TTS | Web Speech API (speechSynthesis, lokal) |
+| STT | Web Speech API (webkitSpeechRecognition) |
+| Wetter | Open-Meteo (kein API-Key) |
+| News | RSS (kein Account) |
+| Kalender | .ics / AppleScript / CalDAV |
 | Build | electron-vite + electron-builder |
-
----
-
-## Voraussetzungen
-
-- **Node.js** 18 oder neuer
-- **npm** 9 oder neuer
-- **Ollama** – [ollama.com/download](https://ollama.com/download)
 
 ---
 
 ## Installation & Start (Entwicklung)
 
 ```bash
-# 1. Repository klonen
 git clone https://github.com/mustafafinnentrop-stack/Gerki-App.git
 cd Gerki-App
-
-# 2. Abhängigkeiten installieren
 npm install
-
-# 3. Ollama installieren (falls noch nicht vorhanden)
-# → https://ollama.com/download
-
-# 4. Modell laden (beim ersten Start oder manuell)
-ollama pull mistral:7b
-
-# 5. App starten (Entwicklungsmodus)
 npm run dev
 ```
 
+**Voraussetzungen:**
+- Node.js 18+
+- [Ollama](https://ollama.com/download) installiert und gestartet
+
 ---
 
-## Build (Distribution)
+## Build
 
 ```bash
-# macOS (DMG – Intel + Apple Silicon)
-npm run build:mac
-
-# Windows (NSIS Installer)
-npm run build:win
-
-# Linux (AppImage)
-npm run build:linux
-
-# Alle Plattformen
-npm run build:all
+npm run build:mac    # macOS (DMG)
+npm run build:win    # Windows (NSIS Installer)
+npm run build:linux  # Linux (AppImage)
 ```
-
-> **Hinweis:** Für den Mac-Build muss ein macOS-System verwendet werden.
-> Cross-Compilation Windows→Mac ist nicht möglich.
 
 ---
 
@@ -85,42 +129,30 @@ npm run build:all
 ```
 Gerki-App/
 ├── src/
-│   ├── main/              Electron Main Process (Backend)
-│   │   ├── core/          KI-Engine, Orchestrator, Skills, Ollama, Auth
-│   │   ├── db/            SQLite Schema, Memory, Datenbankzugang
-│   │   └── ipc/           IPC Handler (Bridge Main ↔ Renderer)
-│   ├── preload/           Electron Preload (contextBridge → window.gerki)
-│   └── renderer/          React Frontend
-│       └── src/
-│           ├── components/ Sidebar
-│           ├── pages/      Chat, Skills, Memory, Dateien, Einstellungen, Account, Setup, Login
-│           └── types/      TypeScript Typen
-├── resources/             App-Icons (icon.ico, icon.icns)
-├── installers-mac/        macOS Bash-Installer (Ollama + Mistral)
-├── installers-windows/    Windows BAT/PS1-Installer
-└── docs/                  Installationsanleitungen, FAQ, Beginner-Guide
+│   ├── main/
+│   │   ├── core/          Orchestrator, Ollama, Skills, Auth, Wetter, News, Kalender, OS-Ops
+│   │   ├── db/            SQLite Schema, Memory, Settings
+│   │   └── ipc/           IPC Handler (Brücke Main ↔ UI)
+│   ├── preload/           contextBridge → window.gerki API
+│   └── renderer/src/
+│       ├── components/    Sidebar, VoiceOrb
+│       ├── hooks/         useSpeechRecognition, useSpeechSynthesis
+│       ├── pages/         Chat, VoiceAssistant, Profile, Skills, Memory,
+│       │                  Files, Connectors, Settings, Account, Setup, Login
+│       └── types/         TypeScript Typen (electron.d.ts)
+└── docs/                  Installationsanleitungen, FAQ
 ```
-
----
-
-## Unterstützte KI-Modelle (Ollama)
-
-| Modell | Größe | RAM | Lizenz | Empfehlung |
-|--------|-------|-----|--------|------------|
-| Mistral 7B | 4,1 GB | 8 GB | Apache 2.0 | ✅ Standard |
-| Qwen 2.5 14B | 8,7 GB | 16 GB | Apache 2.0 | Dokumente & Deutsch |
-| Phi-4 14B | 8,9 GB | 16 GB | MIT | Komplexe Aufgaben |
-| Llama 3.3 70B | 43 GB | 32 GB | Meta Community | Beste Qualität |
 
 ---
 
 ## Pläne
 
-| Plan | KI | Features |
-|------|----|----------|
-| Free | Ollama (lokal) | Alle Basis-Features, offline |
-| Pro | + Claude / GPT-4 | Cloud-KI, erweiterte Skills |
-| Business | + Team-Features | Mehrere Nutzer, Admin |
+| Plan | Features |
+|------|----------|
+| Trial | Alle Features, Ollama lokal |
+| Standard | Erweiterte Skills, Priorität-Support |
+| Pro | Alle Skills, Cloud-Konnektoren |
+| Business | Team-Features, Admin-Panel |
 
 ---
 
