@@ -47,6 +47,33 @@ declare global {
       // ── Settings ──────────────────────────────────────────────────
       settings: {
         get: () => Promise<Record<string, string>>
+        set: (key: string, value: string) => Promise<{ success: boolean }>
+      }
+
+      // ── Morgen-Routine ─────────────────────────────────────────────
+      routine: {
+        weather: (city: string, lat?: string, lon?: string) => Promise<{
+          success: boolean
+          city?: string
+          temperature?: number
+          temperatureMax?: number
+          temperatureMin?: number
+          weatherCode?: number
+          windspeed?: number
+          description?: string
+          error?: string
+        }>
+        news: (feedUrls?: string[], count?: number) => Promise<{
+          success: boolean
+          items?: Array<{ title: string; description: string; link: string; pubDate: string }>
+          error?: string
+        }>
+        calendar: (calendarPath?: string) => Promise<{
+          success: boolean
+          events?: Array<{ title: string; startTime: string; endTime?: string; location?: string }>
+          source?: string
+          error?: string
+        }>
       }
 
       // ── Dateisystem ───────────────────────────────────────────────
@@ -179,6 +206,34 @@ declare global {
       // ── Plan Enforcement ──────────────────────────────────────────
       plan: {
         offlineWarning: () => Promise<{ daysRemaining: number; warn: boolean } | null>
+      }
+
+      // ── Datei-Operationen (Phase 1 – mit Bestätigungsdialog) ──────
+      fs: {
+        createFolder: (path: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        move: (from: string, to: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        rename: (from: string, newName: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        delete: (path: string) => Promise<{ success: boolean; path?: string; error?: string }>
+        write: (path: string, content: string) => Promise<{ success: boolean; path?: string; error?: string }>
+      }
+
+      // ── Connectors (Phase 2 – Cloud-Storage) ──────────────────────
+      connectors: {
+        list: () => Promise<Array<{
+          id: 'google-drive' | 'onedrive' | 'dropbox'
+          name: string
+          description: string
+          status: 'not-configured' | 'disconnected' | 'connected' | 'error'
+          accountLabel?: string
+          error?: string
+        }>>
+        connect: (id: string) => Promise<{ success: boolean; error?: string }>
+        disconnect: (id: string) => Promise<{ success: boolean }>
+      }
+
+      // ── OS-Zugriff (Sprachassistent / Jarvis-Mode) ─────────────────
+      os: {
+        exec: (command: string) => Promise<{ success: boolean; output?: string; error?: string; cancelled?: boolean }>
       }
 
       // ── Events ────────────────────────────────────────────────────

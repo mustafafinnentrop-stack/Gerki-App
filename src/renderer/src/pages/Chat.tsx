@@ -12,7 +12,13 @@ import {
   Check,
   Paperclip,
   X,
-  Download
+  Download,
+  FolderPlus,
+  FileEdit,
+  Trash2,
+  MoveRight,
+  FilePlus,
+  PlayCircle
 } from 'lucide-react'
 
 interface Message {
@@ -159,6 +165,140 @@ function SaveDocButton({ content }: { content: string }): React.JSX.Element {
   )
 }
 
+// ── Gerki-Action Card (Phase 1 – KI-Dateiaktionen mit Bestätigung) ──────
+
+type GerkiAction =
+  | { tool: 'create_folder'; path: string }
+  | { tool: 'move'; from: string; to: string }
+  | { tool: 'rename'; from: string; newName: string }
+  | { tool: 'delete'; path: string }
+  | { tool: 'write'; path: string; content: string }
+
+const ACTION_META: Record<GerkiAction['tool'], { label: string; Icon: typeof FolderPlus; destructive?: boolean }> = {
+  create_folder: { label: 'Ordner anlegen', Icon: FolderPlus },
+  move: { label: 'Datei verschieben', Icon: MoveRight },
+  rename: { label: 'Umbenennen', Icon: FileEdit },
+  delete: { label: 'Löschen', Icon: Trash2, destructive: true },
+  write: { label: 'Datei schreiben', Icon: FilePlus }
+}
+
+function ActionCard({ raw }: { raw: string }): React.JSX.Element {
+  const [status, setStatus] = useState<'pending' | 'running' | 'success' | 'error' | 'cancelled'>('pending')
+  const [result, setResult] = useState<string>('')
+
+  let action: GerkiAction | null = null
+  try {
+    action = JSON.parse(raw.trim()) as GerkiAction
+  } catch {
+    return (
+      <div className="my-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300">
+        Ungültiger Aktions-Block (kein JSON): <code className="ml-1 font-mono">{raw.slice(0, 80)}</code>
+      </div>
+    )
+  }
+
+  if (!action || !ACTION_META[action.tool]) {
+    return (
+      <div className="my-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-300">
+        Unbekanntes Tool: {(action as { tool?: string } | null)?.tool ?? '–'}
+      </div>
+    )
+  }
+
+  const meta = ACTION_META[action.tool]
+
+  const execute = async () => {
+    if (!action) return
+    setStatus('running')
+    try {
+      let res: { success: boolean; path?: string; error?: string }
+      switch (action.tool) {
+        case 'create_folder':
+          res = await window.gerki.fs.createFolder(action.path)
+          break
+        case 'move':
+          res = await window.gerki.fs.move(action.from, action.to)
+          break
+        case 'rename':
+          res = await window.gerki.fs.rename(action.from, action.newName)
+          break
+        case 'delete':
+          res = await window.gerki.fs.delete(action.path)
+          break
+        case 'write':
+          res = await window.gerki.fs.write(action.path, action.content)
+          break
+      }
+      if (res.success) {
+        setStatus('success')
+        setResult(res.path ?? 'Erfolgreich')
+      } else if (res.error?.includes('abgebrochen')) {
+        setStatus('cancelled')
+        setResult(res.error)
+      } else {
+        setStatus('error')
+        setResult(res.error ?? 'Unbekannter Fehler')
+      }
+    } catch (err) {
+      setStatus('error')
+      setResult((err as Error).message)
+    }
+  }
+
+  const summary =
+    action.tool === 'create_folder' ? action.path
+      : action.tool === 'move' ? `${action.from} → ${action.to}`
+      : action.tool === 'rename' ? `${action.from} → ${action.newName}`
+      : action.tool === 'delete' ? action.path
+      : action.tool === 'write' ? `${action.path} (${action.content.length} Zeichen)`
+      : ''
+
+  const Icon = meta.Icon
+  const border = meta.destructive ? 'border-red-500/30' : 'border-primary/30'
+  const bg = meta.destructive ? 'bg-red-500/5' : 'bg-primary/5'
+  const iconColor = meta.destructive ? 'text-red-400' : 'text-primary'
+
+  return (
+    <div className={`my-3 p-3 rounded-xl border ${border} ${bg}`}>
+      <div className="flex items-start gap-3">
+        <Icon size={18} className={`${iconColor} mt-0.5 shrink-0`} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-white mb-1">{meta.label}</p>
+          <p className="text-xs text-white/60 font-mono break-all">{summary}</p>
+          {status === 'success' && (
+            <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
+              <Check size={12} /> {result}
+            </p>
+          )}
+          {status === 'error' && (
+            <p className="text-xs text-red-400 mt-2">Fehler: {result}</p>
+          )}
+          {status === 'cancelled' && (
+            <p className="text-xs text-yellow-400 mt-2">Abgebrochen: {result}</p>
+          )}
+        </div>
+        {status === 'pending' && (
+          <button
+            onClick={execute}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${
+              meta.destructive
+                ? 'bg-red-500/15 text-red-300 hover:bg-red-500/25'
+                : 'bg-primary/15 text-primary hover:bg-primary/25'
+            }`}
+          >
+            <PlayCircle size={12} /> Ausführen
+          </button>
+        )}
+        {status === 'running' && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white/50 shrink-0">
+            <Loader2 size={12} className="animate-spin" /> läuft…
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Message Bubble ──────────────────────────────────────────────────────
 
 function MessageBubble({ message }: { message: Message }): React.JSX.Element {
@@ -202,12 +342,16 @@ function MessageBubble({ message }: { message: Message }): React.JSX.Element {
                   ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5">{children}</ul>,
                   ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5">{children}</ol>,
                   li: ({ children }) => <li className="text-sm">{children}</li>,
-                  code: ({ inline, children, ...props }: { inline?: boolean; children?: React.ReactNode }) =>
-                    inline ? (
+                  code: ({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) => {
+                    if (!inline && className === 'language-gerki-action') {
+                      return <ActionCard raw={String(children).replace(/\n$/, '')} />
+                    }
+                    return inline ? (
                       <code className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono" {...props}>{children}</code>
                     ) : (
                       <code className="block bg-black/30 rounded-lg p-3 text-xs font-mono overflow-x-auto my-2 whitespace-pre" {...props}>{children}</code>
-                    ),
+                    )
+                  },
                   pre: ({ children }) => <>{children}</>,
                   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                   em: ({ children }) => <em className="italic">{children}</em>,

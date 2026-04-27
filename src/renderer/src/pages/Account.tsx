@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { User, Crown, Shield, LogOut, Trash2, Eye, EyeOff, Loader2, CheckCircle2, Lock, BarChart2, RefreshCw } from 'lucide-react'
+import React, { useState } from 'react'
+import { User, Crown, Shield, LogOut, Trash2, Eye, EyeOff, Loader2, CheckCircle2, Lock } from 'lucide-react'
 
 interface UserInfo {
   id: string
@@ -7,15 +7,6 @@ interface UserInfo {
   email: string
   plan: string
   created_at: string
-}
-
-interface UsageInfo {
-  plan: string
-  used: number
-  limit: number
-  remaining: number
-  percent: number
-  month: string
 }
 
 interface AccountPageProps {
@@ -30,8 +21,13 @@ const PLAN_CONFIG = {
     bg: 'bg-green-500/10',
     border: 'border-green-500/20',
     price: 'Kostenlos',
-    features: ['2 Agenten: Behördenpost + Dokumente', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Cloud-KI (Claude/GPT-4)']
+    features: [
+      '2 Agenten: Behördenpost + Dokumente',
+      'KI läuft lokal auf deinem PC (Ollama)',
+      'Memory-System',
+      'Datei-Indexierung'
+    ],
+    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Marketing-Agent']
   },
   standard: {
     label: 'Standard',
@@ -39,8 +35,13 @@ const PLAN_CONFIG = {
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/20',
     price: '39,90 € / Monat',
-    features: ['2 Agenten: Behördenpost + Dokumente', 'Desktop-Automatisierung (Openclaw)', 'KI läuft lokal auf deinem PC', 'Memory-System', 'Datei-Indexierung'],
-    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Cloud-Sync', 'Cloud-KI (Claude/GPT-4)']
+    features: [
+      '2 Agenten: Behördenpost + Dokumente',
+      'KI läuft lokal auf deinem PC (Ollama)',
+      'Memory-System',
+      'Datei-Indexierung'
+    ],
+    missing: ['Rechtsberater, E-Mail, HR, Buchhaltung', 'Marketing-Agent']
   },
   pro: {
     label: 'Pro',
@@ -48,8 +49,13 @@ const PLAN_CONFIG = {
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/20',
     price: '59,90 € / Monat',
-    features: ['5 Agenten: + Rechtsberater, E-Mail, HR, Buchhaltung', 'Desktop-Automatisierung (Openclaw)', 'Cloud-Sync (mehrere Geräte)', 'KI läuft lokal auf deinem PC', 'E-Mail Support 48h'],
-    missing: ['Marketing-Agent', 'Cloud-KI (Claude/GPT-4)', 'Multi-User / Team']
+    features: [
+      '5 Agenten: + Rechtsberater, E-Mail, HR, Buchhaltung',
+      'KI läuft lokal auf deinem PC (Ollama)',
+      'Memory-System + Datei-Indexierung',
+      'E-Mail Support 48h'
+    ],
+    missing: ['Marketing-Agent', 'Multi-User / Team']
   },
   business: {
     label: 'Business',
@@ -57,7 +63,12 @@ const PLAN_CONFIG = {
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/20',
     price: '89,90 € / Monat',
-    features: ['Alle 8 Agenten inkl. Marketing', 'Claude & GPT-4 (Cloud-KI)', 'Cloud-Sync (mehrere Geräte)', 'Multi-User / Team-Accounts', 'Priority Support (24h)'],
+    features: [
+      'Alle 8 Agenten inkl. Marketing',
+      'KI läuft lokal auf deinem PC (Ollama)',
+      'Multi-User / Team-Accounts',
+      'Priority Support (24h)'
+    ],
     missing: []
   },
   expired: {
@@ -81,22 +92,6 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
   const [pwError, setPwError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
-  const [usage, setUsage] = useState<UsageInfo | null>(null)
-  const [usageLoading, setUsageLoading] = useState(false)
-
-  const loadUsage = async () => {
-    setUsageLoading(true)
-    try {
-      const data = await window.gerki.sync.usage()
-      setUsage(data)
-    } catch {
-      // ignore
-    } finally {
-      setUsageLoading(false)
-    }
-  }
-
-  useEffect(() => { loadUsage() }, [])
 
   const planKey = user.plan === 'free' ? 'trial' : user.plan
   const plan = PLAN_CONFIG[planKey as keyof typeof PLAN_CONFIG] ?? PLAN_CONFIG.expired
@@ -228,7 +223,7 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
                   ? 'Wähle Standard, Pro oder Business um alle Funktionen dauerhaft zu nutzen.'
                   : user.plan === 'standard'
                   ? 'Schalte Rechtsberater, HR, Buchhaltung & Cloud-Sync frei.'
-                  : 'Schalte alle 8 Agenten, Claude/GPT-4 & Multi-User frei.'}
+                  : 'Schalte den Marketing-Agent & Multi-User frei.'}
               </p>
               <button
                 onClick={() => window.gerki.setup.openRegister()}
@@ -237,66 +232,6 @@ export default function AccountPage({ user, onLogout }: AccountPageProps): React
                 Jetzt upgraden auf gerki.app
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Token-Verbrauch */}
-        <div className="bg-surface border border-white/5 rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <BarChart2 size={16} className="text-primary" />
-              <h3 className="text-white font-medium">Token-Verbrauch</h3>
-              {usage && <span className="text-white/30 text-xs">{usage.month}</span>}
-            </div>
-            <button
-              onClick={loadUsage}
-              disabled={usageLoading}
-              className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors"
-            >
-              <RefreshCw size={14} className={usageLoading ? 'animate-spin' : ''} />
-            </button>
-          </div>
-
-          {usageLoading && !usage ? (
-            <div className="flex items-center gap-2 text-white/30 text-sm">
-              <Loader2 size={14} className="animate-spin" />
-              Lade Verbrauch…
-            </div>
-          ) : usage ? (
-            <div className="space-y-3">
-              <div className="flex items-end justify-between">
-                <span className="text-white/50 text-sm">Verbrauchte Tokens</span>
-                <span className="text-white font-semibold tabular-nums">
-                  {usage.used.toLocaleString('de-DE')}
-                  <span className="text-white/30 font-normal text-xs ml-1">/ {usage.limit.toLocaleString('de-DE')}</span>
-                </span>
-              </div>
-              <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
-                <div
-                  className={`h-2 rounded-full transition-all ${
-                    usage.percent >= 90 ? 'bg-red-400' : usage.percent >= 70 ? 'bg-yellow-400' : 'bg-primary'
-                  }`}
-                  style={{ width: `${Math.min(usage.percent, 100)}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className={`font-medium ${
-                  usage.percent >= 90 ? 'text-red-400' : usage.percent >= 70 ? 'text-yellow-400' : 'text-primary'
-                }`}>
-                  {usage.percent.toFixed(1)} % verbraucht
-                </span>
-                <span className="text-white/30">{usage.remaining.toLocaleString('de-DE')} verbleibend</span>
-              </div>
-              {usage.percent >= 90 && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5 text-red-400 text-sm">
-                  Kontingent fast erschöpft — erwäge ein Upgrade auf einen höheren Plan.
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-white/30 text-sm">
-              Keine Daten verfügbar — stelle sicher, dass du eingeloggt bist und eine aktive Internetverbindung hast.
-            </p>
           )}
         </div>
 
