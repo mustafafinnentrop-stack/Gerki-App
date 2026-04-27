@@ -51,6 +51,22 @@ import {
 import { getOfflineWarning } from '../core/planEnforcement'
 import { getLastVerifiedAt } from '../core/remoteAuth'
 import { saveDocument } from '../core/documentExport'
+import {
+  createFolder as fsCreateFolder,
+  moveFile as fsMoveFile,
+  renameFile as fsRenameFile,
+  deleteFile as fsDeleteFile,
+  writeFile as fsWriteUserFile
+} from '../core/fileOps'
+import {
+  getAllConnectors,
+  connectConnector,
+  disconnectConnector
+} from '../core/connectors/base'
+import { executeCommand as osExecuteCommand } from '../core/osOps'
+import { getWeather } from '../core/weather'
+import { getNews } from '../core/news'
+import { getTodayEvents } from '../core/calendar'
 
 export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void {
   // Hilfsfunktion: immer das aktuelle Fenster holen (auch nach Mac-Neuöffnung)
@@ -117,6 +133,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   ipcMain.handle('settings:get', () => {
     return getSettings()
+  })
+
+  ipcMain.handle('settings:set', (_event, key: string, value: string) => {
+    getDB().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value)
+    return { success: true }
   })
 
   // =====================================================
@@ -490,5 +511,51 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
   // ── Dokument-Export ─────────────────────────────────────────────────
   ipcMain.handle('document:save', async (_event, content: string, format: 'pdf' | 'docx' | 'txt', suggestedName: string) => {
     return saveDocument(content, format, suggestedName, win())
+  })
+
+  // =====================================================
+  // FILE-OPERATIONEN (Phase 1 – lokale Schreibrechte mit Bestätigung)
+  // =====================================================
+  ipcMain.handle('fs:create-folder', (_event, folderPath: string) =>
+    fsCreateFolder(win(), folderPath)
+  )
+  ipcMain.handle('fs:move', (_event, from: string, to: string) =>
+    fsMoveFile(win(), from, to)
+  )
+  ipcMain.handle('fs:rename', (_event, from: string, newName: string) =>
+    fsRenameFile(win(), from, newName)
+  )
+  ipcMain.handle('fs:delete', (_event, filePath: string) =>
+    fsDeleteFile(win(), filePath)
+  )
+  ipcMain.handle('fs:write', (_event, filePath: string, content: string) =>
+    fsWriteUserFile(win(), filePath, content)
+  )
+
+  // =====================================================
+  // CONNECTORS (Phase 2 – Cloud-Storage-Bindungen)
+  // =====================================================
+  ipcMain.handle('connectors:list', () => getAllConnectors())
+  ipcMain.handle('connectors:connect', (_event, id: string) => connectConnector(id, win()))
+  ipcMain.handle('connectors:disconnect', (_event, id: string) => disconnectConnector(id))
+
+  // =====================================================
+  // OS-ZUGRIFF (Sprachassistent / Jarvis-Mode)
+  // =====================================================
+  ipcMain.handle('os:exec', (_event, command: string) => osExecuteCommand(command, win()))
+
+  // =====================================================
+  // MORGEN-ROUTINE (Wetter, News, Kalender)
+  // =====================================================
+  ipcMain.handle('routine:weather', async (_event, city: string, lat?: string, lon?: string) => {
+    return getWeather(city, lat, lon)
+  })
+
+  ipcMain.handle('routine:news', async (_event, feedUrls?: string[], count?: number) => {
+    return getNews(feedUrls, count ?? 5)
+  })
+
+  ipcMain.handle('routine:calendar', async (_event, calendarPath?: string) => {
+    return getTodayEvents(calendarPath)
   })
 }

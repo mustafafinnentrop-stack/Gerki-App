@@ -7,12 +7,16 @@ import FilesPage from './pages/Files'
 import SettingsPage from './pages/Settings'
 import AccountPage from './pages/Account'
 import SkillsPage from './pages/Skills'
+import ConnectorsPage from './pages/Connectors'
+import ProfilePage from './pages/Profile'
+import VoiceAssistant from './pages/VoiceAssistant'
 import SetupWizard from './pages/Setup'
 import Login from './pages/Login'
 import Register from './pages/Register'
 
-type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'settings' | 'account'
+type Page = 'chat' | 'agents' | 'skills' | 'memory' | 'files' | 'connectors' | 'profile' | 'settings' | 'account'
 type AppState = 'loading' | 'login' | 'register' | 'setup' | 'app'
+type AppMode = 'voice' | 'text'
 
 interface UserInfo {
   id: string
@@ -33,6 +37,9 @@ export default function App(): React.JSX.Element {
   const [appState, setAppState] = useState<AppState>('loading')
   const [user, setUser] = useState<UserInfo | null>(null)
   const [page, setPage] = useState<Page>('chat')
+  const [mode, setMode] = useState<AppMode>(() => {
+    return (localStorage.getItem('gerki.mode') as AppMode) ?? 'voice'
+  })
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [activeSkill, setActiveSkill] = useState<string | null>(null)
@@ -84,6 +91,11 @@ export default function App(): React.JSX.Element {
     setActiveConversationId(null)
     setPage('chat')
     setAppState('login')
+  }, [])
+
+  const handleSwitchMode = useCallback((newMode: AppMode) => {
+    localStorage.setItem('gerki.mode', newMode)
+    setMode(newMode)
   }, [])
 
   const handleNewChat = () => {
@@ -138,6 +150,16 @@ export default function App(): React.JSX.Element {
     )
   }
 
+  // ── Voice Mode ───────────────────────────────────────────────────
+  if (mode === 'voice') {
+    return (
+      <VoiceAssistant
+        user={user}
+        onSwitchToText={() => handleSwitchMode('text')}
+      />
+    )
+  }
+
   // ── Hauptansicht ─────────────────────────────────────────────────
   return (
     <div className="flex h-screen bg-bg text-white overflow-hidden">
@@ -185,6 +207,8 @@ export default function App(): React.JSX.Element {
         {page === 'skills' && <SkillsPage />}
         {page === 'memory' && <MemoryPage />}
         {page === 'files' && <FilesPage />}
+        {page === 'connectors' && <ConnectorsPage />}
+        {page === 'profile' && <ProfilePage />}
         {page === 'settings' && <SettingsPage userPlan={(user?.plan ?? 'trial') as 'trial' | 'standard' | 'pro' | 'business' | 'expired'} />}
         {page === 'account' && user && (
           <AccountPage user={user} onLogout={handleLogout} />

@@ -19,7 +19,18 @@ const gerki = {
 
   // ── Settings ──────────────────────────────────────────────────────
   settings: {
-    get: () => ipcRenderer.invoke('settings:get')
+    get: () => ipcRenderer.invoke('settings:get'),
+    set: (key: string, value: string) => ipcRenderer.invoke('settings:set', key, value)
+  },
+
+  // ── Morgen-Routine ────────────────────────────────────────────────
+  routine: {
+    weather: (city: string, lat?: string, lon?: string) =>
+      ipcRenderer.invoke('routine:weather', city, lat, lon),
+    news: (feedUrls?: string[], count?: number) =>
+      ipcRenderer.invoke('routine:news', feedUrls, count),
+    calendar: (calendarPath?: string) =>
+      ipcRenderer.invoke('routine:calendar', calendarPath)
   },
 
   // ── Dateisystem ───────────────────────────────────────────────────
@@ -99,6 +110,27 @@ const gerki = {
   appInfo: {
     checkForUpdates: () => ipcRenderer.invoke('app:check-for-updates'),
     getVersion: () => ipcRenderer.invoke('app:get-version')
+  },
+
+  // ── Datei-Operationen (Phase 1 – mit Bestätigungsdialog) ──────────
+  fs: {
+    createFolder: (path: string) => ipcRenderer.invoke('fs:create-folder', path),
+    move: (from: string, to: string) => ipcRenderer.invoke('fs:move', from, to),
+    rename: (from: string, newName: string) => ipcRenderer.invoke('fs:rename', from, newName),
+    delete: (path: string) => ipcRenderer.invoke('fs:delete', path),
+    write: (path: string, content: string) => ipcRenderer.invoke('fs:write', path, content)
+  },
+
+  // ── Connectors (Phase 2 – Cloud-Storage) ──────────────────────────
+  connectors: {
+    list: () => ipcRenderer.invoke('connectors:list'),
+    connect: (id: string) => ipcRenderer.invoke('connectors:connect', id),
+    disconnect: (id: string) => ipcRenderer.invoke('connectors:disconnect', id)
+  },
+
+  // ── OS-Zugriff (Sprachassistent / Jarvis-Mode) ────────────────────
+  os: {
+    exec: (command: string) => ipcRenderer.invoke('os:exec', command)
   },
 
   // ── Events ────────────────────────────────────────────────────────
