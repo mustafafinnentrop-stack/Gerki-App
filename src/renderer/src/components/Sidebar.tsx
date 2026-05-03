@@ -10,7 +10,8 @@ import {
   User,
   Crown,
   Plug,
-  Sunrise
+  Sunrise,
+  Mic
 } from 'lucide-react'
 
 interface Conversation {
@@ -34,6 +35,7 @@ interface SidebarProps {
   conversations: Conversation[]
   onNewChat: () => void
   onSelectConversation: (id: string) => void
+  onSwitchToVoice?: () => void
   user: UserInfo | null
 }
 
@@ -82,6 +84,7 @@ export default function Sidebar({
   conversations,
   onNewChat,
   onSelectConversation,
+  onSwitchToVoice,
   user
 }: SidebarProps): React.JSX.Element {
   const isPro = user?.plan === 'business'
@@ -103,8 +106,22 @@ export default function Sidebar({
         </div>
       </div>
 
+      {/* Jarvis Mode Button */}
+      {onSwitchToVoice && (
+        <div className="px-2 pt-3 pb-1">
+          <button
+            onClick={onSwitchToVoice}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-all group"
+          >
+            <Mic size={15} className="group-hover:scale-110 transition-transform" />
+            <span>Jarvis Modus</span>
+            <span className="ml-auto text-xs text-indigo-500/60">✦</span>
+          </button>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="px-2 py-3 space-y-0.5">
+      <nav className="px-2 py-2 space-y-0.5">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
           const isActive = currentPage === item.id
