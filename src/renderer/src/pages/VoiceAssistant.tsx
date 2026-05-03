@@ -3,6 +3,7 @@ import { MessageSquare, Mic, MicOff, Volume2, VolumeX, Loader2, Terminal, Folder
 import VoiceOrb, { OrbState } from '../components/VoiceOrb'
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
+import { useElevenLabsSynthesis } from '../hooks/useElevenLabsSynthesis'
 
 interface VoiceAssistantProps {
   user: { username: string; plan: string } | null
@@ -158,11 +159,36 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
     () => localStorage.getItem('gerki.stt.consented') === '1'
   )
   const [showConsent, setShowConsent] = useState(false)
+  const [elevenlabsKey, setElevenlabsKey] = useState('')
+  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState('pNInz6obpgDQGcFmaJgB')
   const conversationIdRef = useRef<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const greeted = useRef(false)
 
-  const tts = useSpeechSynthesis({ language: 'de-DE', rate: 1.0 })
+  // Load ElevenLabs settings
+  useEffect(() => {
+    window.gerki.settings.get().then((s) => {
+      setElevenlabsKey(s['elevenlabs_api_key'] ?? '')
+      setElevenlabsVoiceId(s['elevenlabs_voice_id'] ?? 'pNInz6obpgDQGcFmaJgB')
+    })
+  }, [])
+
+  // Both TTS engines – use ElevenLabs when API key is configured
+  const elTts = useElevenLabsSynthesis({ apiKey: elevenlabsKey, voiceId: elevenlabsVoiceId })
+  const browserTts = useSpeechSynthesis({ language: 'de-DE', rate: 1.0 })
+
+  const tts = {
+    speak: (text: string) => {
+      if (elevenlabsKey) elTts.speak(text)
+      else browserTts.speak(text)
+    },
+    stop: () => {
+      if (elevenlabsKey) elTts.stop()
+      else browserTts.stop()
+    },
+    isSpeaking: elevenlabsKey ? elTts.isSpeaking : browserTts.isSpeaking,
+    supported: elevenlabsKey ? elTts.supported : browserTts.supported
+  }
 
   const handleSpeechResult = useCallback(
     (text: string, isFinal: boolean) => {
@@ -380,6 +406,11 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
           </span>
           {user && (
             <span className="text-white/25 text-xs">· {user.username}</span>
+          )}
+          {elevenlabsKey && (
+            <span className="text-xs text-indigo-400/60 border border-indigo-500/20 rounded-full px-2 py-0.5 ml-1">
+              ElevenLabs
+            </span>
           )}
         </div>
         <div className="no-drag flex items-center gap-2">

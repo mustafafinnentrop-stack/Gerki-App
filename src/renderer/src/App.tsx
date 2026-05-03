@@ -173,6 +173,7 @@ export default function App(): React.JSX.Element {
           setActiveConversationId(id)
           setPage('chat')
         }}
+        onSwitchToVoice={() => handleSwitchMode('voice')}
         user={user}
       />
 
