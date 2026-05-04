@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageSquare, Mic, MicOff, Volume2, VolumeX, Loader2, Terminal, FolderPlus, MoveRight, FileEdit, Trash2, FilePlus, PlayCircle, Check } from 'lucide-react'
 import VoiceOrb, { OrbState } from '../components/VoiceOrb'
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition'
+import { useWhisperSTT } from '../hooks/useWhisperSTT'
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis'
 import { useElevenLabsSynthesis } from '../hooks/useElevenLabsSynthesis'
 
@@ -191,18 +191,15 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
   }
 
   const handleSpeechResult = useCallback(
-    (text: string, isFinal: boolean) => {
-      setLiveTranscript(text)
-      if (isFinal && text.trim()) {
-        setLiveTranscript('')
-        submitMessage(text.trim())
-      }
+    (text: string) => {
+      setLiveTranscript('')
+      submitMessage(text.trim())
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
 
-  const stt = useSpeechRecognition({
+  const stt = useWhisperSTT({
     language: 'de-DE',
     onResult: handleSpeechResult,
     onEnd: () => setOrbState(isProcessing ? 'thinking' : 'idle')
@@ -287,11 +284,12 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tts.supported, ttsEnabled, user])
 
-  // Sync orb with TTS state
+  // Sync orb with TTS / STT states
   useEffect(() => {
     if (tts.isSpeaking) setOrbState('speaking')
-    else if (!isProcessing && !stt.isListening) setOrbState('idle')
-  }, [tts.isSpeaking, isProcessing, stt.isListening])
+    else if (stt.isTranscribing || isProcessing) setOrbState('thinking')
+    else if (!stt.isListening) setOrbState('idle')
+  }, [tts.isSpeaking, isProcessing, stt.isListening, stt.isTranscribing])
 
   const submitMessage = async (text: string) => {
     if (!text.trim() || isProcessing) return
@@ -353,20 +351,14 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
     }
     tts.stop()
     setOrbState('listening')
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      setAudioStream(stream)
-    } catch {
-      // mic denied – still start stt
-    }
-    stt.start()
+    const stream = await stt.start()
+    if (stream) setAudioStream(stream)
   }
 
   const stopListening = () => {
     stt.stop()
-    audioStream?.getTracks().forEach((t) => t.stop())
     setAudioStream(null)
-    setOrbState(isProcessing ? 'thinking' : 'idle')
+    setOrbState(stt.isTranscribing || isProcessing ? 'thinking' : 'idle')
   }
 
   const grantConsent = () => {
@@ -499,7 +491,7 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
           onMouseUp={stopListening}
           onTouchStart={startListening}
           onTouchEnd={stopListening}
-          disabled={isProcessing || tts.isSpeaking}
+          disabled={isProcessing || tts.isSpeaking || stt.isTranscribing}
           className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
             stt.isListening
               ? 'bg-cyan-500 shadow-[0_0_30px_#22d3ee80] scale-110'
@@ -526,12 +518,13 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
           <div className="max-w-sm mx-4 bg-[#0f0f2e] border border-yellow-500/30 rounded-2xl p-6">
             <h3 className="text-white font-semibold mb-2">Spracheingabe aktivieren</h3>
             <p className="text-white/60 text-sm mb-4 leading-relaxed">
-              Die Spracherkennung nutzt Chromes eingebauten Sprachdienst. Deine Audioaufnahme
-              wird zur Erkennung kurz an <strong className="text-yellow-400">Google-Server</strong> gesendet,
-              danach nur der Text weiterverarbeitet. Gerki selbst überträgt keine KI-Daten.
+              Der Jarvis-Modus benötigt Zugriff auf dein Mikrofon. Deine Audioaufnahme wird
+              lokal aufgezeichnet und zur Transkription an die{' '}
+              <strong className="text-yellow-400">OpenAI Whisper API</strong> gesendet –
+              danach wird nur der Text weiterverarbeitet.
             </p>
             <p className="text-white/40 text-xs mb-5">
-              Diese Einwilligung kann in Einstellungen zurückgezogen werden.
+              OpenAI API-Key in Einstellungen → Spracherkennung konfigurieren. Diese Einwilligung kann dort zurückgezogen werden.
             </p>
             <div className="flex gap-3">
               <button

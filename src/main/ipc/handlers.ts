@@ -4,11 +4,9 @@
  */
 
 import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
-import { readFileSync, createWriteStream } from 'fs'
-import { extname, basename, join } from 'path'
-import { tmpdir } from 'os'
-import { exec } from 'child_process'
-import { get as httpsGet } from 'https'
+import { readFileSync } from 'fs'
+import { extname, basename } from 'path'
+import { exec, spawn } from 'child_process'
 import pdfParse from 'pdf-parse'
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
@@ -286,45 +284,29 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
       return { success: false, error: 'Nur auf Windows verfügbar' }
     }
     try {
-      const destPath = join(tmpdir(), 'OllamaSetup.exe')
-      win().webContents.send('ollama:install-progress', { status: 'Lade Ollama herunter...', percent: 0 })
+      win().webContents.send('ollama:install-progress', { status: 'Starte PowerShell-Installation...', percent: 5 })
 
       await new Promise<void>((resolve, reject) => {
-        const file = createWriteStream(destPath)
-        let downloaded = 0
-        const totalEstimate = 120 * 1024 * 1024
+        // Open a visible PowerShell window and run the official Ollama install script
+        const ps = spawn('powershell.exe', [
+          '-ExecutionPolicy', 'Bypass',
+          '-NoProfile',
+          '-Command', 'irm https://ollama.com/install.ps1 | iex'
+        ], { windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] })
 
-        const doGet = (url: string) => {
-          httpsGet(url, (res) => {
-            if (res.statusCode === 301 || res.statusCode === 302) {
-              doGet(res.headers.location!)
-              return
-            }
-            const total = parseInt(res.headers['content-length'] || '0', 10) || totalEstimate
-            res.on('data', (chunk: Buffer) => {
-              downloaded += chunk.length
-              const percent = Math.round((downloaded / total) * 100)
-              win().webContents.send('ollama:install-progress', {
-                status: `Lade Ollama herunter... ${Math.round(downloaded / 1024 / 1024)} MB`,
-                percent
-              })
-            })
-            res.pipe(file)
-            file.on('finish', () => { file.close(); resolve() })
-            file.on('error', reject)
-          }).on('error', reject)
-        }
-        doGet('https://ollama.com/download/OllamaSetup.exe')
-      })
-
-      win().webContents.send('ollama:install-progress', { status: 'Installiere Ollama...', percent: 100 })
-
-      await new Promise<void>((resolve, reject) => {
-        exec(`"${destPath}" /S`, (error) => {
-          if (error) reject(error)
-          else resolve()
+        ps.stdout?.on('data', (data: Buffer) => {
+          const line = data.toString().trim()
+          if (line) win().webContents.send('ollama:install-progress', { status: line })
         })
+
+        ps.on('close', (code) => {
+          if (code === 0 || code === null) resolve()
+          else reject(new Error(`PowerShell beendet mit Code ${code}`))
+        })
+        ps.on('error', reject)
       })
+
+      win().webContents.send('ollama:install-progress', { status: 'Warte auf Ollama...', percent: 90 })
 
       for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 2000))
@@ -557,5 +539,42 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
 
   ipcMain.handle('routine:calendar', async (_event, calendarPath?: string) => {
     return getTodayEvents(calendarPath)
+  })
+
+  // =====================================================
+  // STT – Spracherkennung via OpenAI Whisper API
+  // =====================================================
+  ipcMain.handle('stt:transcribe', async (_event, payload: { audioBuffer: number[]; language: string }) => {
+    const settings = getSettings()
+    const apiKey: string = settings['openai_api_key'] ?? ''
+
+    if (!apiKey) {
+      return { success: false, error: 'Kein OpenAI API-Key konfiguriert. Bitte in Einstellungen → Spracherkennung eintragen.' }
+    }
+
+    try {
+      const buffer = Buffer.from(payload.audioBuffer)
+      const blob = new Blob([buffer], { type: 'audio/webm' })
+      const form = new FormData()
+      form.append('file', blob, 'audio.webm')
+      form.append('model', 'whisper-1')
+      form.append('language', payload.language.split('-')[0])
+
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: form
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        return { success: false, error: `Whisper API Fehler: ${response.status} ${errText}` }
+      }
+
+      const data = await response.json() as { text: string }
+      return { success: true, text: data.text }
+    } catch (error) {
+      return { success: false, error: (error as Error).message }
+    }
   })
 }

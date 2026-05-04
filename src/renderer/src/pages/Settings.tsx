@@ -50,15 +50,22 @@ export default function SettingsPage({ userPlan: _userPlan }: SettingsPageProps)
   const [elSaved, setElSaved] = useState(false)
   const [elTesting, setElTesting] = useState(false)
 
+  // OpenAI Whisper STT state
+  const [oaiKey, setOaiKey] = useState('')
+  const [oaiShowKey, setOaiShowKey] = useState(false)
+  const [oaiSaving, setOaiSaving] = useState(false)
+  const [oaiSaved, setOaiSaved] = useState(false)
+
   useEffect(() => {
     checkOllamaStatus()
     window.gerki.appInfo?.getVersion().then((v) => setAppVersion(v ?? ''))
 
-    // Load ElevenLabs settings
+    // Load ElevenLabs + OpenAI settings
     window.gerki.settings.get().then((s) => {
       setElApiKey(s['elevenlabs_api_key'] ?? '')
       setElVoiceId(s['elevenlabs_voice_id'] ?? 'pNInz6obpgDQGcFmaJgB')
       setElModelId(s['elevenlabs_model_id'] ?? 'eleven_multilingual_v2')
+      setOaiKey(s['openai_api_key'] ?? '')
     })
 
     const unsubAvailable = window.gerki.on('app:update-available', () => setUpdateStatus('available'))
@@ -143,6 +150,14 @@ export default function SettingsPage({ userPlan: _userPlan }: SettingsPageProps)
     } catch { /* ignore */ } finally {
       setElTesting(false)
     }
+  }
+
+  const saveOpenAIKey = async () => {
+    setOaiSaving(true)
+    await window.gerki.settings.set('openai_api_key', oaiKey.trim())
+    setOaiSaving(false)
+    setOaiSaved(true)
+    setTimeout(() => setOaiSaved(false), 2500)
   }
 
   return (
@@ -271,6 +286,65 @@ export default function SettingsPage({ userPlan: _userPlan }: SettingsPageProps)
           {!elApiKey && (
             <p className="mt-3 text-xs text-white/25">
               Ohne API-Key wird im Jarvis Modus die Browser-Stimme verwendet (klingt weniger natürlich).
+            </p>
+          )}
+        </section>
+
+        {/* OpenAI Whisper – Spracherkennung */}
+        <section className="mb-6 p-5 rounded-xl bg-surface border border-white/5">
+          <div className="flex items-center gap-2 mb-1">
+            <Mic size={16} className="text-cyan-400" />
+            <h2 className="text-sm font-medium text-white">Spracherkennung – OpenAI Whisper</h2>
+            <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              Jarvis STT
+            </span>
+          </div>
+          <p className="text-xs text-white/40 mb-4">
+            Der Jarvis-Modus nutzt OpenAI Whisper für genaue Spracherkennung. API-Key unter{' '}
+            <a
+              href="https://platform.openai.com/api-keys"
+              onClick={(e) => { e.preventDefault(); window.open('https://platform.openai.com/api-keys') }}
+              className="text-cyan-400 hover:underline"
+            >
+              platform.openai.com
+            </a>
+            {' '}erstellen.
+          </p>
+
+          <div className="relative mb-3">
+            <input
+              type={oaiShowKey ? 'text' : 'password'}
+              value={oaiKey}
+              onChange={(e) => setOaiKey(e.target.value)}
+              placeholder="sk-..."
+              className="w-full bg-bg border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-sm text-white placeholder-white/20 focus:outline-none focus:border-cyan-500/50"
+            />
+            <button
+              onClick={() => setOaiShowKey((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+            >
+              {oaiShowKey ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
+
+          <button
+            onClick={saveOpenAIKey}
+            disabled={oaiSaving || !oaiKey.trim()}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 disabled:opacity-40 text-cyan-400 text-sm font-medium transition-colors"
+          >
+            {oaiSaving ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : oaiSaved ? (
+              <CheckCircle size={12} className="text-green-400" />
+            ) : (
+              <Save size={12} />
+            )}
+            {oaiSaved ? 'Gespeichert!' : 'Speichern'}
+          </button>
+
+          {!oaiKey && (
+            <p className="mt-3 text-xs text-white/25">
+              Ohne API-Key ist die Spracherkennung im Jarvis Modus nicht verfügbar.
             </p>
           )}
         </section>
