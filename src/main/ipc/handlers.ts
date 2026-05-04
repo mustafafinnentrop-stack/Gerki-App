@@ -541,40 +541,4 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): void
     return getTodayEvents(calendarPath)
   })
 
-  // =====================================================
-  // STT – Spracherkennung via OpenAI Whisper API
-  // =====================================================
-  ipcMain.handle('stt:transcribe', async (_event, payload: { audioBuffer: number[]; language: string }) => {
-    const settings = getSettings()
-    const apiKey: string = settings['openai_api_key'] ?? ''
-
-    if (!apiKey) {
-      return { success: false, error: 'Kein OpenAI API-Key konfiguriert. Bitte in Einstellungen → Spracherkennung eintragen.' }
-    }
-
-    try {
-      const buffer = Buffer.from(payload.audioBuffer)
-      const blob = new Blob([buffer], { type: 'audio/webm' })
-      const form = new FormData()
-      form.append('file', blob, 'audio.webm')
-      form.append('model', 'whisper-1')
-      form.append('language', payload.language.split('-')[0])
-
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}` },
-        body: form
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        return { success: false, error: `Whisper API Fehler: ${response.status} ${errText}` }
-      }
-
-      const data = await response.json() as { text: string }
-      return { success: true, text: data.text }
-    } catch (error) {
-      return { success: false, error: (error as Error).message }
-    }
-  })
 }
