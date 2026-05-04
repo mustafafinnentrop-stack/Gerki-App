@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "out/renderer",
+  "framework": "vite",
+  "env": [
+    "NEXT_PUBLIC_API_URL"
+  ]
+}
