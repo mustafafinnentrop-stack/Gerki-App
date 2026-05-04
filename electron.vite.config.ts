@@ -20,6 +20,7 @@ export default defineConfig({
         '@': resolve('src/renderer/src')
       }
     },
+    base: './',
     plugins: [react()]
   }
 })
