@@ -21,10 +21,16 @@
     "check": "npm run lint && npx tsc --noEmit && echo '✅ Lint + TypeScript OK'",
     "test": "npm run build && npx playwright test",
     "test:headed": "npm run build && npx playwright test --headed",
-    "test:report": "npx playwright show-report tests/playwright-report"
+    "test:report": "npx playwright show-report tests/playwright-report",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "ios:build": "npm run build && npx cap sync ios"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "@electron-toolkit/utils": "^3.0.0",
     "better-sqlite3": "^9.4.3",
     "chokidar": "^3.6.0",
