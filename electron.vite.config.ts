@@ -21,6 +21,9 @@ export default defineConfig({
       }
     },
     base: './',
-    plugins: [react()]
+    plugins: [react()],
+    optimizeDeps: {
+      exclude: ['@xenova/transformers']
+    }
   }
 })

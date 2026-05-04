@@ -133,12 +133,6 @@ const gerki = {
     exec: (command: string) => ipcRenderer.invoke('os:exec', command)
   },
 
-  // ── STT – Spracherkennung (Whisper API) ───────────────────────────
-  stt: {
-    transcribe: (payload: { audioBuffer: number[]; language: string }) =>
-      ipcRenderer.invoke('stt:transcribe', payload)
-  },
-
   // ── Events ────────────────────────────────────────────────────────
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => callback(...args)

@@ -439,12 +439,16 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
           {orbState === 'speaking' && '◆ spricht'}
         </div>
 
-        {/* Live transcript */}
-        {liveTranscript && (
+        {/* Model download progress or live transcript */}
+        {stt.modelStatus ? (
+          <div className="mb-4 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 max-w-lg text-center">
+            <p className="text-xs text-indigo-300">{stt.modelStatus}</p>
+          </div>
+        ) : liveTranscript ? (
           <div className="mb-4 px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 max-w-lg text-center">
             <p className="text-sm text-cyan-200 italic">"{liveTranscript}"</p>
           </div>
-        )}
+        ) : null}
 
         {/* Messages scroll area */}
         <div className="w-full max-w-2xl overflow-y-auto max-h-[40vh] space-y-3 px-1">
@@ -519,12 +523,13 @@ export default function VoiceAssistant({ user, onSwitchToText }: VoiceAssistantP
             <h3 className="text-white font-semibold mb-2">Spracheingabe aktivieren</h3>
             <p className="text-white/60 text-sm mb-4 leading-relaxed">
               Der Jarvis-Modus benötigt Zugriff auf dein Mikrofon. Deine Audioaufnahme wird
-              lokal aufgezeichnet und zur Transkription an die{' '}
-              <strong className="text-yellow-400">OpenAI Whisper API</strong> gesendet –
-              danach wird nur der Text weiterverarbeitet.
+              lokal verarbeitet – die Spracherkennung läuft mit{' '}
+              <strong className="text-green-400">Whisper (Open Source, lokal)</strong>{' '}
+              direkt auf deinem Gerät. Es werden keine Audiodaten übertragen.
             </p>
             <p className="text-white/40 text-xs mb-5">
-              OpenAI API-Key in Einstellungen → Spracherkennung konfigurieren. Diese Einwilligung kann dort zurückgezogen werden.
+              Beim ersten Start wird das Whisper-Modell einmalig heruntergeladen (~75 MB).
+              Diese Einwilligung kann in den Einstellungen zurückgezogen werden.
             </p>
             <div className="flex gap-3">
               <button
