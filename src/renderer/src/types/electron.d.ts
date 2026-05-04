@@ -236,6 +236,15 @@ declare global {
         exec: (command: string) => Promise<{ success: boolean; output?: string; error?: string; cancelled?: boolean }>
       }
 
+      // ── STT – Spracherkennung (Whisper API) ────────────────────────
+      stt: {
+        transcribe: (payload: { audioBuffer: number[]; language: string }) => Promise<{
+          success: boolean
+          text?: string
+          error?: string
+        }>
+      }
+
       // ── Events ────────────────────────────────────────────────────
       on: (channel: string, callback: (...args: unknown[]) => void) => () => void
     }
