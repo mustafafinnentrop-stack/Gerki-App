@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     // Verwende die Vercel-URL als Live-Quelle
-    url: 'https://gerki-app.vercel.app',
+    url: 'https://www.gerki.app/app/index.html',
     cleartext: false,
     allowNavigation: ['*']
   },
